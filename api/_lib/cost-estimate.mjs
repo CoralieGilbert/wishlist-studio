@@ -8,6 +8,11 @@ const OUTPUT_TOKENS_STYLE = 400;
 
 const TOKENS_PER_WISHLIST_ITEM = 45; // ~une ligne "nom (marque) — catégorie, couleur, prix [tags]"
 
+function priceUSD(inputTokens, outputTokens) {
+  const costUSD = (inputTokens / 1e6) * PRICE_IN_PER_M + (outputTokens / 1e6) * PRICE_OUT_PER_M;
+  return Math.round(costUSD * 100000) / 100000;
+}
+
 export function estimateStyleGeneration({ textChars = 0, imageCount = 0, useWishlistSummary = false, wishlistItemCount = 0 }) {
   const textTokens = Math.ceil(textChars / 4);
   const imageTokens = imageCount * TOKENS_PER_IMAGE;
@@ -16,6 +21,28 @@ export function estimateStyleGeneration({ textChars = 0, imageCount = 0, useWish
   const promptOverhead = 300;
   const inputTokens = textTokens + imageTokens + summaryTokens + itemTokens + promptOverhead;
   const outputTokens = OUTPUT_TOKENS_STYLE;
-  const costUSD = (inputTokens / 1e6) * PRICE_IN_PER_M + (outputTokens / 1e6) * PRICE_OUT_PER_M;
-  return { inputTokens, outputTokens, costUSD: Math.round(costUSD * 100000) / 100000 };
+  return { inputTokens, outputTokens, costUSD: priceUSD(inputTokens, outputTokens) };
+}
+
+const OUTPUT_TOKENS_SHOPPING = 700;
+export function estimateShoppingAssistant({ candidateCount = 0 }) {
+  const candidateTokens = candidateCount * TOKENS_PER_WISHLIST_ITEM;
+  const wardrobeSummaryTokens = 500;
+  const styleTokens = 250;
+  const promptOverhead = 300;
+  const inputTokens = candidateTokens + wardrobeSummaryTokens + styleTokens + promptOverhead;
+  const outputTokens = OUTPUT_TOKENS_SHOPPING;
+  return { inputTokens, outputTokens, costUSD: priceUSD(inputTokens, outputTokens) };
+}
+
+const OUTPUT_TOKENS_OUTFIT = 400;
+export function estimateOutfitAdvice({ outfitItemCount = 0, wardrobeItemCount = 0, wishlistItemCount = 0 }) {
+  const outfitTokens = outfitItemCount * TOKENS_PER_WISHLIST_ITEM;
+  const wardrobeTokens = wardrobeItemCount * TOKENS_PER_WISHLIST_ITEM;
+  const wishlistTokens = wishlistItemCount * TOKENS_PER_WISHLIST_ITEM;
+  const styleTokens = 250;
+  const promptOverhead = 300;
+  const inputTokens = outfitTokens + wardrobeTokens + wishlistTokens + styleTokens + promptOverhead;
+  const outputTokens = OUTPUT_TOKENS_OUTFIT;
+  return { inputTokens, outputTokens, costUSD: priceUSD(inputTokens, outputTokens) };
 }

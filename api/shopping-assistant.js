@@ -1,0 +1,106 @@
+// Route /api/shopping-assistant (POST) : propose un panier qui respecte un
+// budget, choisi UNIQUEMENT parmi les vraies pièces de la wishlist (jamais
+// d'article inventé — l'IA reçoit une liste de candidats réels avec leur
+// uid, et ne peut que piocher dedans). Grâce à ça, aucun risque
+// d'hallucination de prix ou de produit qui n'existe pas.
+import { getUserFromRequest, supabaseAdmin } from './_lib/supabase-admin.mjs';
+import { buildWishlistSummary, buildShoppingCandidates } from './_lib/wishlist-summary.mjs';
+
+const MAX_CANDIDATES = 150;
+
+const SCHEMA = {
+  type: 'object',
+  properties: {
+    picks: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: { uid: { type: 'string' }, reason: { type: 'string' } },
+        required: ['uid', 'reason'],
+        additionalProperties: false,
+      },
+    },
+    note: { type: 'string' },
+  },
+  required: ['picks', 'note'],
+  additionalProperties: false,
+};
+
+export default async function handler(req, res) {
+  if (req.method !== 'POST') { res.status(405).json({ error: 'Méthode non autorisée' }); return; }
+  const user = await getUserFromRequest(req);
+  if (!user) { res.status(401).json({ error: 'Non connectée.' }); return; }
+
+  const { budget, currency = 'CAD', itemLimit = 40 } = req.body || {};
+  const budgetNum = Number(budget);
+  if (!budgetNum || budgetNum <= 0) { res.status(400).json({ error: 'Budget invalide.' }); return; }
+  const limit = Math.max(1, Math.min(MAX_CANDIDATES, Number(itemLimit) || 40));
+
+  const { data: settings } = await supabaseAdmin.from('user_settings').select('openai_api_key,style_text').eq('user_id', user.id).single();
+  const apiKey = settings?.openai_api_key;
+  if (!apiKey) { res.status(400).json({ error: "Aucune clé API enregistrée. Ajoute ta clé OpenAI dans Données & réglages." }); return; }
+
+  const [wardrobeSummary, candidates] = await Promise.all([
+    buildWishlistSummary(supabaseAdmin, user.id),
+    buildShoppingCandidates(supabaseAdmin, user.id, limit),
+  ]);
+  if (!candidates.length) { res.status(400).json({ error: 'Aucune pièce dans la wishlist à proposer.' }); return; }
+
+  const candidateLines = candidates.map(c => `${c.uid} | ${c.name || 'Sans nom'} | ${c.brand || ''} | ${c.category || ''} | ${c.color || c.color_family || ''} | ${c.price_num ?? '?'} ${c.currency || ''} | ${(c.tags || []).join(', ')}`).join('\n');
+
+  const prompt = `Tu es une assistante personal shopper. Objectif : composer un panier d'achats qui respecte un budget de ${budgetNum} ${currency}, en piochant UNIQUEMENT dans la liste de candidats fournie ci-dessous (jamais d'article hors de cette liste).
+${settings.style_text ? `Style personnel de la cliente :\n${settings.style_text}\n` : ''}
+Contexte (vestiaire et goûts) :
+${wardrobeSummary}
+
+Candidats disponibles (format : uid | nom | marque | catégorie | couleur | prix devise | tags) :
+${candidateLines}
+
+Consignes :
+- Privilégie fortement les pièces dont la devise est ${currency} : ne compte JAMAIS ensemble des prix de devises différentes (ce serait faux). Une pièce dans une autre devise ne peut être choisie que si tu le signales explicitement comme "hors budget principal, devise différente".
+- Choisis une combinaison de pièces en ${currency} dont la somme ne dépasse pas ${budgetNum} ${currency}.
+- Privilégie les pièces qui comblent un vrai manque ou complètent des pièces déjà possédées, pas des doublons.
+- Pour chaque pièce choisie, donne une raison courte (une phrase).
+- "note" : un court résumé (2-3 phrases) de la logique du panier (ne donne pas de total chiffré, il sera calculé automatiquement).
+- N'invente aucune pièce : le champ "uid" doit correspondre exactement à un uid de la liste.`;
+
+  try {
+    const openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [{ role: 'user', content: prompt }],
+        response_format: { type: 'json_schema', json_schema: { name: 'panier', strict: true, schema: SCHEMA } },
+        max_tokens: 900,
+      }),
+    });
+    if (!openaiRes.ok) {
+      const t = await openaiRes.text().catch(() => '');
+      const err = new Error(t.slice(0, 300)); err.status = openaiRes.status; throw err;
+    }
+    const data = await openaiRes.json();
+    const content = data.choices?.[0]?.message?.content;
+    if (!content) throw new Error('Réponse vide');
+    const parsed = JSON.parse(content);
+    const byUid = new Map(candidates.map(c => [c.uid, c]));
+    parsed.picks = (parsed.picks || []).filter(p => byUid.has(p.uid));
+    // Le total est calculé ici, jamais par l'IA (elle additionne parfois des
+    // devises différentes entre elles, ce qui n'a pas de sens).
+    const totalsByCurrency = {};
+    parsed.picks.forEach(p => {
+      const c = byUid.get(p.uid);
+      if (c.price_num != null) {
+        const cur = c.currency || '?';
+        totalsByCurrency[cur] = (totalsByCurrency[cur] || 0) + Number(c.price_num);
+      }
+    });
+    parsed.totalsByCurrency = totalsByCurrency;
+    parsed.budget = { amount: budgetNum, currency };
+    res.status(200).json(parsed);
+  } catch (e) {
+    console.error('shopping-assistant error:', e.message);
+    const msg = e.status === 401 ? 'Clé API invalide ou expirée.' : e.status === 429 ? 'Limite ou quota OpenAI atteint.' : 'Erreur pendant la génération. Réessaie.';
+    res.status(502).json({ error: msg });
+  }
+}

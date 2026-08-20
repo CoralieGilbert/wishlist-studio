@@ -206,6 +206,10 @@ async function callApi(path, payload) {
 async function analyzeImageAI(dataUri) { return callApi('/api/analyze-image', { image: dataUri }); }
 async function estimateStyleCost(params) { return callApi('/api/estimate-style-cost', params); }
 async function generateStyle(params) { return callApi('/api/generate-style', params); }
+async function estimateShoppingCost(params) { return callApi('/api/estimate-shopping-cost', params); }
+async function runShoppingAssistant(params) { return callApi('/api/shopping-assistant', params); }
+async function estimateOutfitCost(params) { return callApi('/api/estimate-outfit-cost', params); }
+async function getOutfitAdvice(params) { return callApi('/api/outfit-advice', params); }
 
 // === Profil "Mon Style" (texte + captures Pinterest) =======================
 async function getStyleProfile() {
@@ -237,4 +241,4 @@ async function removeStyleImage(photoId) {
   if (error) throw error;
 }
 
-window.DB = { loadState, persistState, snapshot, uploadDataUri, getSettings, saveOpenAIKey, analyzeImageAI, estimateStyleCost, generateStyle, getStyleProfile, saveStyleText, addStyleImage, removeStyleImage };
+window.DB = { loadState, persistState, snapshot, uploadDataUri, getSettings, saveOpenAIKey, analyzeImageAI, estimateStyleCost, generateStyle, getStyleProfile, saveStyleText, addStyleImage, removeStyleImage, estimateShoppingCost, runShoppingAssistant, estimateOutfitCost, getOutfitAdvice };

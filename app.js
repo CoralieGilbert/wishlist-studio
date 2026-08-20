@@ -196,7 +196,7 @@ function openItemOutfits(uid){const x=byId(uid);if(!x)return;const linked=outfit
 function collectionsView(){return `<div class="catalog-head"><div><h1>Collections</h1></div><div class="catalog-tools"><button class="btn primary" onclick="openNewCollection()">+ Nouvelle collection</button></div></div><div class="collection-row">${displayCollections().map((c,i)=>{const card=collectionCard(c,i);if(c.virtual)return `<div style="position:relative">${card}</div>`;return `<div style="position:relative"><div style="position:absolute;z-index:4;right:10px;top:10px;display:flex;gap:5px"><button class="circle" onclick="event.stopPropagation();editCollection('${c.id}')">✎</button><button class="circle" onclick="event.stopPropagation();deleteCollection('${c.id}')">×</button></div>${card}</div>`}).join('')}</div>`}
 function purchasesView(){const xs=liveItems().filter(isPurchased).sort((a,b)=>(b.purchase_date||b.date_added||'').localeCompare(a.purchase_date||a.date_added||''));const tot=purchaseTotals(xs);return `<div class="catalog-head"><div><h1>Mes achats</h1></div><div class="catalog-tools"><button class="btn" onclick="go('catalog',{status:'Acheté'})">Voir dans le catalogue</button><button class="btn primary" onclick="openQuickAdd()">+ Ajouter</button></div></div><div class="purchase-summary"><div class="purchase-stat"><span>Articles achetés</span><b>${xs.length}</b></div>${Object.entries(tot).map(([c,v])=>`<div class="purchase-stat"><span>Dépensé · ${esc(c)}</span><b>${esc(formatMoney(v,c))}</b></div>`).join('')}</div>${xs.length?`<div class="listview">${xs.map(purchaseListItem).join('')}</div>`:'<div class="empty">Aucun achat enregistré pour le moment. Utilise l’icône ✓ sur une pièce, ou sélectionne plusieurs articles depuis le panier.</div>'}`}
 function purchaseListItem(x){const paid=paidValue(x);const pn=pieceNumber(x);const paidCur=x.paid_currency||x.currency;return `<div class="listitem"><img src="${mainImage(x)}" alt=""><div><h3>${esc(x.name)}</h3><p>${esc(x.brand)} · ${pn!==null?'N° '+pn+' · ':''}${paid!==null?'payé '+esc(formatMoney(paid,paidCur)):'prix payé à renseigner'}</p><div class="purchase-list-meta">${x.purchase_date?'Acheté le '+esc(x.purchase_date):'Date d’achat non renseignée'}${x.price_num!==null&&x.price_num!==undefined&&paid!==null&&Number(x.price_num)!==Number(paid)?` · prix wishlist ${esc(formatMoney(x.price_num,x.currency))}`:''}</div></div><div class="list-actions"><button class="btn" onclick="openPurchaseModal(['${x.uid}'])">Modifier l’achat</button>${x.url?`<a class="btn" href="${safeUrl(x.url)}" target="_blank" rel="noopener">Article ↗</a>`:''}<button class="btn" onclick="togglePurchased('${x.uid}',false)">Annuler « acheté »</button></div></div>`}
-function cartView(){const xs=state.cart.map(byId).filter(x=>x&&!state.trash.includes(x.uid)),tot=priceTotals(xs);return `<div class="catalog-head"><div><h1>Panier</h1></div><div class="catalog-tools"><button class="btn" onclick="state.cart=[];persist();render()">Vider le panier</button></div></div><div class="totals">${Object.entries(tot).map(([c,v])=>`<div class="totalchip"><span>Total ${esc(c)}</span><b>${v.toFixed(2)}</b></div>`).join('')||'<span class="pill">Aucun prix additionnable</span>'}<div class="totalchip"><span>Articles</span><b>${xs.length}</b></div></div>${xs.length?`<div class="cart-batchbar"><label><input id="selectAllCart" type="checkbox" onchange="toggleAllCartSelections(this.checked)"> Tout sélectionner</label><span class="cart-selected-count" id="cartSelectedCount">0 sélectionné</span><button class="btn primary" onclick="openBatchPurchaseFromCart()">✓ Marquer comme acheté</button></div><div class="listview">${xs.map(x=>listItem(x,'cart')).join('')}</div>`:'<div class="empty">Ton panier est vide.</div>'}`}
+function cartView(){const xs=state.cart.map(byId).filter(x=>x&&!state.trash.includes(x.uid)),tot=priceTotals(xs);return `<div class="catalog-head"><div><h1>Panier</h1></div><div class="catalog-tools"><button class="btn primary" onclick="openShoppingModal()">✨ Assistant shopping</button><button class="btn" onclick="state.cart=[];persist();render()">Vider le panier</button></div></div><div class="totals">${Object.entries(tot).map(([c,v])=>`<div class="totalchip"><span>Total ${esc(c)}</span><b>${v.toFixed(2)}</b></div>`).join('')||'<span class="pill">Aucun prix additionnable</span>'}<div class="totalchip"><span>Articles</span><b>${xs.length}</b></div></div>${xs.length?`<div class="cart-batchbar"><label><input id="selectAllCart" type="checkbox" onchange="toggleAllCartSelections(this.checked)"> Tout sélectionner</label><span class="cart-selected-count" id="cartSelectedCount">0 sélectionné</span><button class="btn primary" onclick="openBatchPurchaseFromCart()">✓ Marquer comme acheté</button></div><div class="listview">${xs.map(x=>listItem(x,'cart')).join('')}</div>`:'<div class="empty">Ton panier est vide.</div>'}`}
 function trashView(){const xs=state.trash.map(byId).filter(Boolean);return `<div class="catalog-head"><div><h1>Corbeille</h1></div><div class="catalog-tools"><button class="btn danger" onclick="emptyTrash()">Vider définitivement</button></div></div>${xs.length?`<div class="listview">${xs.map(x=>listItem(x,'trash')).join('')}</div>`:'<div class="empty">La corbeille est vide.</div>'}`}
 function listItem(x,mode){if(mode==='cart')return `<div class="listitem cart-listitem"><label class="cart-select" title="Sélectionner"><input type="checkbox" data-cart-select="${x.uid}" onchange="updateCartSelectedCount()"></label><img src="${mainImage(x)}" alt=""><div><h3>${esc(x.name)}</h3><p>${esc(x.brand)} · ${esc(x.store)} · ${esc(x.price||'')}</p></div><div class="list-actions"><button class="btn" onclick="openItemEditor('${x.uid}')">Modifier</button><button class="btn" onclick="openPurchaseModal(['${x.uid}'])">✓ Acheté</button><button class="btn" onclick="toggleCart('${x.uid}')">Retirer du panier</button><button class="btn danger" onclick="trashItem('${x.uid}')">Corbeille</button></div></div>`;return `<div class="listitem"><img src="${mainImage(x)}" alt=""><div><h3>${esc(x.name)}</h3><p>${esc(x.brand)} · ${esc(x.store)} · ${esc(x.price||'')}</p></div><div class="list-actions"><button class="btn primary" onclick="restoreItem('${x.uid}')">Restaurer</button><button class="btn danger" onclick="deleteForever('${x.uid}')">Supprimer</button></div></div>`}
 function wireAfterRender(){
@@ -344,7 +344,7 @@ async function openStyleModal(){
   styleImages=profile.images;
   renderStyleModal(profile.style_text);
 }
-function styleMaxWishlistItems(){return Math.min(30,state.articles.filter(a=>!state.trash.includes(a.uid)&&!a.purchased).length)}
+function styleMaxWishlistItems(){return Math.min(100,state.articles.filter(a=>!state.trash.includes(a.uid)&&!a.purchased).length)}
 function renderStyleModal(text){
   const hasText=!!(text&&text.trim());
   const n=styleImages.length;
@@ -467,6 +467,94 @@ async function runStyleGenerate(){
     toast('Texte généré — relis et enregistre si ça te convient');
   }catch(e){toast(e.message||'Erreur IA')}
   finally{btn.disabled=false;styleDeepConfirmed=false;box.innerHTML='';onStyleSliderChange()}
+}
+
+// === Assistant shopping (panier budget-aware, choisi dans la vraie wishlist) ===
+let shoppingDeepConfirmed=false;
+let lastShoppingResult=null;
+function shoppingMaxCandidates(){return Math.min(100,state.articles.filter(a=>!state.trash.includes(a.uid)&&!a.purchased).length)}
+function openShoppingModal(){openModal('shoppingModal');renderShoppingModal()}
+function renderShoppingModal(){
+  const max=shoppingMaxCandidates();
+  const def=Math.min(40,max);
+  document.getElementById('shoppingModalBody').innerHTML=`
+    <p style="color:var(--muted);font-size:12px;margin:0 0 14px">L'IA choisit uniquement parmi tes vrais articles de wishlist (jamais de produit inventé), en tenant compte de ton budget et de ton style.</p>
+    <label><span>Budget</span><input id="shopBudget" type="number" min="1" step="1" placeholder="300" oninput="onShoppingSliderChange()"></label>
+    <label><span>Devise</span><input id="shopCurrency" value="CAD" oninput="onShoppingSliderChange()"></label>
+    <div class="full" style="margin:14px 0 6px">
+      <label style="display:block;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px">Pièces de wishlist à considérer : <b id="shopItemCountLabel">${def}</b> / ${max}</label>
+      <input type="range" id="shopItemSlider" min="1" max="${max||1}" value="${def||1}" oninput="onShoppingSliderChange()" style="width:100%" ${max?'':'disabled'}>
+    </div>
+    <div id="shoppingEstimateBox" class="full" style="margin:4px 0 10px;font-size:12px;color:var(--muted)"></div>
+    <div class="full"><button class="btn primary" id="shoppingGenerateBtn" onclick="runShoppingGenerate()">✨ Générer un panier</button></div>
+    <div class="full" id="shoppingResults" style="margin-top:18px"></div>
+  `;
+  onShoppingSliderChange();
+}
+function estimateShoppingLocal(candidateCount){
+  const candidateTokens=candidateCount*45,wardrobeSummaryTokens=500,styleTokens=250,promptOverhead=300;
+  const inputTokens=candidateTokens+wardrobeSummaryTokens+styleTokens+promptOverhead,outputTokens=700;
+  const costUSD=(inputTokens/1e6)*0.15+(outputTokens/1e6)*0.60;
+  return {inputTokens,outputTokens,costUSD};
+}
+const SHOPPING_CONFIRM_THRESHOLD_USD=0.003;
+function onShoppingSliderChange(){
+  const slider=document.getElementById('shopItemSlider'),label=document.getElementById('shopItemCountLabel');
+  if(label&&slider)label.textContent=slider.value;
+  shoppingDeepConfirmed=false;
+  const btn=document.getElementById('shoppingGenerateBtn'),box=document.getElementById('shoppingEstimateBox');
+  if(!btn)return;
+  const est=estimateShoppingLocal(Number(slider?.value||0));
+  if(box)box.innerHTML=`Estimation : ≈ ${est.inputTokens+est.outputTokens} tokens, environ <b>${est.costUSD.toFixed(4)} $</b>.`;
+  btn.textContent=est.costUSD>SHOPPING_CONFIRM_THRESHOLD_USD?'Voir le coût et confirmer':'✨ Générer un panier';
+}
+async function runShoppingGenerate(){
+  const budget=Number(document.getElementById('shopBudget')?.value||0);
+  const currency=(document.getElementById('shopCurrency')?.value||'CAD').trim()||'CAD';
+  const itemLimit=Number(document.getElementById('shopItemSlider')?.value||0);
+  const btn=document.getElementById('shoppingGenerateBtn'),box=document.getElementById('shoppingEstimateBox'),results=document.getElementById('shoppingResults');
+  if(!budget||budget<=0){toast('Indique un budget d\'abord');return}
+  const est=estimateShoppingLocal(itemLimit);
+
+  if(est.costUSD>SHOPPING_CONFIRM_THRESHOLD_USD&&!shoppingDeepConfirmed){
+    btn.disabled=true;btn.textContent='Calcul de l\'estimation…';
+    try{
+      const serverEst=await DB.estimateShoppingCost({candidateCount:itemLimit});
+      box.innerHTML=`Cette demande coûte plus que la normale : <b>≈ ${serverEst.inputTokens+serverEst.outputTokens} tokens</b>, environ <b>${serverEst.costUSD.toFixed(4)} $</b>.`;
+      btn.textContent=`Confirmer et lancer (~${serverEst.costUSD.toFixed(4)} $)`;
+      shoppingDeepConfirmed=true;
+    }catch(e){box.textContent='Erreur estimation : '+e.message}
+    btn.disabled=false;
+    return;
+  }
+
+  btn.disabled=true;btn.textContent='Génération en cours…';results.innerHTML='';
+  try{
+    const result=await DB.runShoppingAssistant({budget,currency,itemLimit});
+    lastShoppingResult=result;
+    renderShoppingResults(result);
+    toast('Panier proposé — relis avant d\'ajouter au panier réel');
+  }catch(e){toast(e.message||'Erreur IA')}
+  finally{btn.disabled=false;shoppingDeepConfirmed=false;box.innerHTML='';onShoppingSliderChange()}
+}
+function renderShoppingResults(result){
+  const picks=(result.picks||[]).map(p=>({...p,item:byId(p.uid)})).filter(p=>p.item);
+  const totals=Object.entries(result.totalsByCurrency||{}).map(([c,v])=>`${v.toFixed(2)} ${c}`).join(' + ')||'—';
+  document.getElementById('shoppingResults').innerHTML=`
+    <div style="border-top:1px solid var(--line);padding-top:14px">
+      <p style="color:var(--muted);font-size:13px">${esc(result.note||'')}</p>
+      <div class="statsline"><span class="pill">Total : ${esc(totals)}</span><span class="pill">Budget visé : ${esc(String(result.budget?.amount||''))} ${esc(result.budget?.currency||'')}</span></div>
+      <div class="listview" style="margin-top:10px">${picks.map(p=>`<div class="listitem"><img src="${mainImage(p.item)}" alt=""><div><h3>${esc(p.item.name)}</h3><p>${esc(p.item.brand||'')} · ${esc(p.item.price||'')}</p><p style="color:var(--muted);font-size:11px">${esc(p.reason||'')}</p></div></div>`).join('')||'<div class="empty">Aucune suggestion.</div>'}</div>
+      ${picks.length?`<div class="full" style="margin-top:12px"><button class="btn primary" onclick="addShoppingPicksToCart()">Ajouter ces ${picks.length} pièces au panier</button></div>`:''}
+    </div>`;
+}
+function addShoppingPicksToCart(){
+  if(!lastShoppingResult)return;
+  (lastShoppingResult.picks||[]).forEach(p=>{if(!state.cart.includes(p.uid))state.cart.push(p.uid)});
+  persist();
+  toast('Ajouté au panier');
+  closeModal('shoppingModal');
+  go('cart');
 }
 
 function exportData(){const blob=new Blob([JSON.stringify({version:4,exportedAt:new Date().toISOString(),state},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='wishlist-studio-backup-'+new Date().toISOString().slice(0,10)+'.json';a.click();URL.revokeObjectURL(a.href);toast('Backup exporté')}

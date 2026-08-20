@@ -32,7 +32,7 @@ export async function buildWishlistSummary(supabaseAdmin, userId) {
 // grandit avec N — d'où le curseur côté interface pour garder la main sur
 // le coût.
 export async function buildWishlistDetail(supabaseAdmin, userId, limit) {
-  const n = Math.max(0, Math.min(50, Number(limit) || 0));
+  const n = Math.max(0, Math.min(100, Number(limit) || 0));
   if (!n) return '';
   const { data } = await supabaseAdmin.from('articles')
     .select('name,brand,category,subcategory,color,price,tags')
@@ -41,4 +41,28 @@ export async function buildWishlistDetail(supabaseAdmin, userId, limit) {
   if (!data?.length) return '';
   const lines = data.map(a => `- ${a.name || 'Sans nom'}${a.brand ? ` (${a.brand})` : ''} — ${[a.category, a.color, a.price].filter(Boolean).join(', ')}${a.tags?.length ? ` [${a.tags.join(', ')}]` : ''}`);
   return `Dernières pièces activement envisagées à l'achat :\n${lines.join('\n')}`;
+}
+
+// Candidats "achetables" pour l'assistant shopping : uniquement des pièces
+// réelles de la wishlist (jamais inventées), avec leur prix, pour que l'IA
+// puisse composer un panier qui respecte un budget.
+export async function buildShoppingCandidates(supabaseAdmin, userId, limit) {
+  const n = Math.max(0, Math.min(150, Number(limit) || 0));
+  if (!n) return [];
+  const { data } = await supabaseAdmin.from('articles')
+    .select('uid,name,brand,category,subcategory,color,color_family,price_num,currency,tags')
+    .eq('user_id', userId).eq('is_trashed', false).eq('purchased', false)
+    .order('date_added', { ascending: false }).limit(n);
+  return data || [];
+}
+
+// Pièces de vestiaire (hors celles déjà dans la tenue), candidates pour un
+// éventuel remplacement suggéré par l'IA.
+export async function buildWardrobeCandidates(supabaseAdmin, userId, excludeUids, limit) {
+  const n = Math.max(0, Math.min(100, Number(limit) || 0));
+  if (!n) return [];
+  const { data } = await supabaseAdmin.from('wardrobe_items')
+    .select('uid,name,brand,category,subcategory,color,color_family,tags')
+    .eq('user_id', userId).eq('wardrobe_active', true).limit(n + excludeUids.length);
+  return (data || []).filter(w => !excludeUids.includes(w.uid)).slice(0, n);
 }

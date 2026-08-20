@@ -9,7 +9,7 @@ import { getUserFromRequest, supabaseAdmin } from './_lib/supabase-admin.mjs';
 import { buildWishlistSummary, buildWishlistDetail } from './_lib/wishlist-summary.mjs';
 
 const MAX_IMAGES = 20;
-const MAX_WISHLIST_ITEMS = 50;
+const MAX_WISHLIST_ITEMS = 100;
 
 function buildPrompt({ currentText, mode, hasWishlistContext, wishlistContext, hasImages }) {
   let p = `Tu aides une personne à rédiger la description de son style vestimentaire personnel, à la première personne, en français, en un seul paragraphe (100 à 200 mots).\n`;
