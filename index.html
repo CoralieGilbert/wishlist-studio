@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<!-- Wishlist Studio v5.0 · carrousels multi-photo intelligents -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Wishlist Studio v5.2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;500;600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="app hide" id="appRoot">
+<header class="topbar"><div class="topbar-inner">
+ <button class="brandmark" onclick="go('home')"><b>Wishlist Studio</b></button>
+ <nav class="nav" id="nav"></nav>
+ <div class="actions">
+   <button class="iconbtn" title="Panier" onclick="go('cart')">🛒<span class="counter hide" id="cartCount"></span></button>
+   <button class="iconbtn" title="Corbeille" onclick="go('trash')">⌫<span class="counter hide" id="trashCount"></span></button>
+   <button class="btn primary" onclick="openQuickAdd()"><span class="label">Ajouter</span> +</button>
+   <button class="iconbtn" title="Se déconnecter" onclick="Auth.logout()">⏻</button>
+ </div>
+</div></header>
+<main class="shell" id="view"></main>
+<button class="fab" onclick="openQuickAdd()" aria-label="Ajouter un article">+</button>
+</div>
+
+<div class="modalback" id="quickAddModal"><div class="modal"><div class="modalhead"><h2>Ajouter</h2><button class="close" onclick="closeModal('quickAddModal')">×</button></div><div class="modalbody">
+  <div class="quickadd-grid">
+    <button class="quickadd-choice" onclick="quickManualAdd()"><strong>Ajouter manuellement</strong><span>Créer une fiche complète avec lien, prix, catégorie, tags, etc.</span></button>
+    <button class="quickadd-choice" onclick="document.getElementById('quickFileInput').click()"><strong>Choisir des images</strong><span>Depuis ton téléphone ou ton ordinateur. Tu peux en sélectionner plusieurs d’un coup.</span></button>
+    <div class="quickadd-choice" style="grid-column:1/-1">
+      <strong>Ajouter par lien</strong>
+      <span>Colle le lien d’une page produit : on récupère automatiquement 1 ou 2 photos.</span>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <input id="quickLinkInput" type="url" placeholder="https://…" style="flex:1;min-width:0">
+        <button class="btn primary" onclick="quickLinkAdd()">Récupérer</button>
+      </div>
+      <div id="quickLinkStatus" style="margin-top:6px;font-size:12px;color:var(--muted)"></div>
+    </div>
+    <div class="quickadd-zone" id="quickPasteZone" tabindex="0">
+      <b>Colle ou dépose tes images ici</b>
+      <p>Clique dans cette zone puis Ctrl+V / ⌘V. Plusieurs images du presse-papiers sont acceptées quand le navigateur les fournit. Tu peux aussi glisser-déposer plusieurs fichiers.</p>
+      <div class="paste-hint">⌘/Ctrl + V · images multiples</div>
+      <input id="quickFileInput" type="file" accept="image/*" multiple style="display:none">
+    </div>
+    <div class="quick-count" id="quickCount">Aucune image sélectionnée</div>
+    <div class="quick-preview" id="quickPreview"></div>
+  </div>
+</div><div class="modalfoot"><button class="btn" onclick="clearQuickImages()">Effacer</button><button class="btn" onclick="closeModal('quickAddModal')">Annuler</button><button class="btn primary" id="quickCreateBtn" onclick="createQuickDrafts()" disabled>Créer les brouillons</button></div></div></div>
+
+
+<div class="modalback" id="purchaseModal"><div class="modal wide purchase-modal"><div class="modalhead"><h2 id="purchaseModalTitle">Marquer comme acheté</h2><button class="close" onclick="closeModal('purchaseModal')">×</button></div><div class="modalbody" id="purchaseModalBody"></div><div class="modalfoot"><span class="purchase-modal-meta" id="purchaseModalMeta"></span><button class="btn" onclick="closeModal('purchaseModal')">Annuler</button><button class="btn primary" onclick="savePurchaseModal()">Enregistrer l’achat</button></div></div></div>
+
+<div class="modalback" id="itemModal"><div class="modal"><div class="modalhead"><h2 id="itemModalTitle">Ajouter un article</h2><button class="close" onclick="closeModal('itemModal')">×</button></div><div class="modalbody" id="itemFormWrap"></div><div class="modalfoot"><button class="btn" onclick="closeModal('itemModal')">Annuler</button><button class="btn primary" onclick="saveItemForm()">Enregistrer</button></div></div></div>
+<div class="modalback" id="collectionModal"><div class="modal"><div class="modalhead"><h2>Collections</h2><button class="close" onclick="closeModal('collectionModal')">×</button></div><div class="modalbody" id="collectionModalBody"></div><div class="modalfoot"><button class="btn" onclick="newCollectionFromModal()">+ Nouvelle collection</button><button class="btn primary" onclick="saveCollectionMembership()">Terminé</button></div></div></div>
+<div class="modalback" id="newCollectionModal"><div class="modal"><div class="modalhead"><h2>Nouvelle collection</h2><button class="close" onclick="closeModal('newCollectionModal')">×</button></div><div class="modalbody"><div class="form"><label class="full"><span>Nom</span><input id="newCollName" placeholder="Ex. Tenues Japon, bureau gothique…"></label><label><span>Symbole</span><input id="newCollEmoji" value="✦" maxlength="4"></label><label><span>Couleur / vibe</span><input id="newCollDesc" placeholder="Quelques mots"></label></div></div><div class="modalfoot"><button class="btn" onclick="closeModal('newCollectionModal')">Annuler</button><button class="btn primary" onclick="createCollection()">Créer</button></div></div></div>
+
+<div class="modalback" id="outfitModal"><div class="modal wide"><div class="modalhead"><h2 id="outfitModalTitle">Créer une tenue</h2><button class="close" onclick="closeModal('outfitModal')">×</button></div><div class="modalbody" id="outfitModalBody"></div><div class="modalfoot"><button class="btn" onclick="closeModal('outfitModal')">Annuler</button><button class="btn primary" onclick="saveOutfitForm()">Enregistrer la tenue</button></div></div></div>
+<div class="modalback" id="outfitDetailModal"><div class="modal wide"><div class="modalhead"><h2 id="outfitDetailTitle">Tenue</h2><button class="close" onclick="closeModal('outfitDetailModal')">×</button></div><div class="modalbody" id="outfitDetailBody"></div></div></div>
+<div class="modalback" id="galleryModal"><div class="modal wide"><div class="modalhead"><h2 id="galleryTitle">Photos</h2><button class="close" onclick="closeModal('galleryModal')">×</button></div><div class="modalbody" id="galleryBody"></div></div></div>
+
+<div class="modalback" id="dataModal"><div class="modal"><div class="modalhead"><h2>Données & sauvegarde</h2><button class="close" onclick="closeModal('dataModal')">×</button></div><div class="modalbody" id="dataModalBody"></div></div></div>
+<div class="lightbox" id="lightbox" onclick="if(event.target===this)closeLightbox()"><button class="close" onclick="closeLightbox()">×</button><img id="lightboxImg"></div>
+<div class="toast" id="toast"></div>
+
+<div class="modalback open" id="authGate"><div class="modal" style="max-width:360px">
+  <div class="modalhead"><h2>Wishlist Studio</h2></div>
+  <div class="form" style="padding:0 20px 20px">
+    <label class="full"><span>Email</span><input id="authEmail" type="email" autocomplete="username"></label>
+    <label class="full"><span>Mot de passe</span><input id="authPassword" type="password" autocomplete="current-password"></label>
+    <div class="full" id="authError" style="color:var(--sale);display:none;font-size:13px"></div>
+    <div class="full" style="display:flex;gap:8px"><button class="btn primary" id="authSubmit" onclick="Auth.login()">Se connecter</button></div>
+  </div>
+</div></div>
+
+<script type="module" src="db.js"></script>
+<script src="app.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+{
+  "name": "wishlist-studio",
+  "version": "1.0.0",
+  "description": "Application personnelle pour centraliser wishlist, vestiaire, tenues et collections. Voir `wishlist_studio_cahier_des_charges_v6.md` (dans le dossier d'origine) pour le cahier des charges complet.",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "private": true,
+  "dependencies": {
+    "@supabase/supabase-js": "^2.112.3",
+    "dotenv": "^17.4.2",
+    "pg": "^8.23.0"
+  }
+}

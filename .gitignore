@@ -1,0 +1,13 @@
+# Secrets — ne jamais committer
+.env
+.env.local
+
+# Dépendances Node (installées localement, pas versionnées)
+node_modules/
+
+# Sortie de la migration ponctuelle (grosse, régénérable, pas dans le dépôt)
+migration-output/
+
+# Fichiers système
+.DS_Store
+Thumbs.db
