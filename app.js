@@ -357,9 +357,9 @@ function renderStyleModal(text){
     <div class="full" style="margin-top:20px;border-top:1px solid var(--line);padding-top:16px">
       <span class="eyebrow">Générer / améliorer avec l'IA</span>
       <div style="margin:10px 0">
-      ${hasText?`<label class="checkline" style="display:block;margin:6px 0"><input type="radio" name="styleMode" value="keep" checked> Améliorer le texte actuel</label><label class="checkline" style="display:block;margin:6px 0"><input type="radio" name="styleMode" value="scratch"> Repartir de zéro</label>`:''}
-      <label class="checkline" style="display:block;margin:6px 0"><input type="checkbox" id="styleUseWishlist"> Utiliser ma wishlist (résumé léger — marques/couleurs/catégories les plus fréquentes, pas la liste complète)</label>
-      <label class="checkline" style="display:block;margin:6px 0"><input type="checkbox" id="styleUsePinterest" onchange="onStylePinterestToggle()" ${n?'':'disabled'}> Utiliser mes captures Pinterest ${n>6?`(<span id="stylePinterestLabel">6 plus récentes</span>)`:''}</label>
+      ${hasText?`<label class="checkline" style="margin:6px 0"><input type="radio" name="styleMode" value="keep" checked> Améliorer le texte actuel</label><label class="checkline" style="margin:6px 0"><input type="radio" name="styleMode" value="scratch"> Repartir de zéro</label>`:''}
+      <label class="checkline" style="margin:6px 0"><input type="checkbox" id="styleUseWishlist"> Utiliser ma wishlist (résumé léger — marques/couleurs/catégories les plus fréquentes, pas la liste complète)</label>
+      <label class="checkline" style="margin:6px 0"><input type="checkbox" id="styleUsePinterest" onchange="onStylePinterestToggle()" ${n?'':'disabled'}> Utiliser mes captures Pinterest ${n>6?`(<span id="stylePinterestLabel">6 plus récentes</span>)`:''}</label>
       ${n>6?`<div id="stylePinterestScopeWrap" class="hide" style="margin:6px 0 6px 24px"><label class="checkline"><input type="checkbox" id="stylePinterestDeep" onchange="onStylePinterestToggle()"> Balayage complet — les ${n} images (coûte plus cher, estimation avant de lancer)</label></div>`:''}
       </div>
       <div id="styleEstimateBox" style="margin:4px 0 10px;font-size:12px;color:var(--muted)"></div>
