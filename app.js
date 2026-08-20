@@ -272,7 +272,32 @@ async function quickLinkAdd(){
 function handleQuickPaste(e){const files=[];if(e.clipboardData?.items){for(const it of e.clipboardData.items){if(it.type&&it.type.startsWith('image/')){const f=it.getAsFile();if(f)files.push(f)}}}if(!files.length&&e.clipboardData?.files){files.push(...[...e.clipboardData.files].filter(f=>f.type?.startsWith('image/')))}if(files.length){e.preventDefault();handleQuickFiles(files)}else toast('Aucune image trouvée dans le presse-papiers')}
 async function handleQuickFiles(files){const imgs=files.filter(f=>f&&f.type&&f.type.startsWith('image/'));if(!imgs.length){toast('Choisis des fichiers image');return}for(const f of imgs){try{const data=await compressImageFile(f,1200,.78);quickImages.push({data,name:f.name||'image'});renderQuickImages()}catch(err){console.warn(err)}}toast(`${imgs.length} image${imgs.length>1?'s':''} ajoutée${imgs.length>1?'s':''}`)}
 function compressImageFile(file,max=1200,quality=.78){return new Promise((resolve,reject)=>{const r=new FileReader();r.onerror=reject;r.onload=()=>{const img=new Image();img.onerror=reject;img.onload=()=>{const scale=Math.min(1,max/Math.max(img.width,img.height));const c=document.createElement('canvas');c.width=Math.max(1,Math.round(img.width*scale));c.height=Math.max(1,Math.round(img.height*scale));c.getContext('2d').drawImage(img,0,0,c.width,c.height);{const webp=c.toDataURL('image/webp',quality);resolve(webp.startsWith('data:image/webp')?webp:c.toDataURL('image/jpeg',quality))}};img.src=r.result};r.readAsDataURL(file)})}
-function renderQuickImages(){const p=document.getElementById('quickPreview'),c=document.getElementById('quickCount'),b=document.getElementById('quickCreateBtn');if(p)p.innerHTML=quickImages.map((x,i)=>`<div class="quick-thumb"><img src="${x.data}" alt=""><button title="Retirer" onclick="event.stopPropagation();removeQuickImage(${i})">×</button></div>`).join('');if(c)c.textContent=quickImages.length?`${quickImages.length} image${quickImages.length>1?'s':''} prête${quickImages.length>1?'s':''}`:'Aucune image sélectionnée';if(b){b.disabled=!quickImages.length;b.textContent=quickImages.length?`Créer ${quickImages.length} brouillon${quickImages.length>1?'s':''}`:'Créer les brouillons'}}
+function renderQuickImages(){const p=document.getElementById('quickPreview'),c=document.getElementById('quickCount'),b=document.getElementById('quickCreateBtn'),a=document.getElementById('quickAnalyzeBtn');if(p)p.innerHTML=quickImages.map((x,i)=>`<div class="quick-thumb"><img src="${x.data}" alt=""><button title="Retirer" onclick="event.stopPropagation();removeQuickImage(${i})">×</button></div>`).join('');if(c)c.textContent=quickImages.length?`${quickImages.length} image${quickImages.length>1?'s':''} prête${quickImages.length>1?'s':''}`:'Aucune image sélectionnée';if(b){b.disabled=!quickImages.length;b.textContent=quickImages.length?`Créer ${quickImages.length} brouillon${quickImages.length>1?'s':''}`:'Créer les brouillons'}if(a)a.disabled=!quickImages.length}
+async function quickAnalyzeAI(){
+  if(!quickImages.length){toast('Ajoute au moins une image d\'abord');return}
+  const btn=document.getElementById('quickAnalyzeBtn');const original=btn?.textContent;
+  if(btn){btn.disabled=true;btn.textContent='Analyse en cours…'}
+  try{
+    const fiche=await DB.analyzeImageAI(quickImages[0].data);
+    const mainImg=quickImages[0].data,extras=quickImages.slice(1).map(x=>x.data);
+    clearQuickImages();closeModal('quickAddModal');openItemEditor();
+    transientImage=mainImg;editorExtraImages=extras;editorMainPreview='';renderEditorImagePreview();
+    const set=(id,v)=>{const el=document.getElementById(id);if(el&&v!==null&&v!==undefined&&v!=='')el.value=v};
+    set('fName',fiche.name);set('fBrand',fiche.brand);set('fStore',fiche.store);
+    if(fiche.category)set('fSuper',fiche.category);
+    set('fSub',fiche.subcategory);set('fColor',fiche.color);
+    if(fiche.color_family)set('fColorFamily',fiche.color_family);
+    if(fiche.price_num!=null)set('fPriceNum',fiche.price_num);
+    if(fiche.original_price_num!=null)set('fOriginal',String(fiche.original_price_num));
+    if(fiche.currency)set('fCurrency',fiche.currency);
+    if(fiche.sale)set('fSale','Oui');
+    if(fiche.tags?.length)set('fTags',fiche.tags.join(', '));
+    toast('Fiche préremplie par l\'IA — vérifie avant d\'enregistrer');
+  }catch(e){
+    console.error(e);toast(e.message||'Erreur pendant l\'analyse IA');
+    if(btn){btn.disabled=false;btn.textContent=original}
+  }
+}
 function removeQuickImage(i){quickImages.splice(i,1);renderQuickImages()}
 function clearQuickImages(){quickImages=[];const i=document.getElementById('quickFileInput');if(i)i.value='';renderQuickImages()}
 function createQuickDrafts(){if(!quickImages.length)return;const now=Date.now(),date=new Date().toISOString().slice(0,10);const drafts=quickImages.map((im,i)=>{const uid=`c-${now.toString(36)}-${i}`;return {uid,id:uid,name:`À compléter ${i+1}`,brand:'',store:'',supercategory:'Autre',subcategory:'À classer',category:'À classer',color:'',color_family:'Autre',price:'',price_num:null,original:'',discount:'',currency:'CAD',sale:'Non',purchase_type:'Plaisir',status:'À compléter',priority:'Moyenne',size:'',date_added:date,desire_score:3,utility_score:3,purchased:false,paid_price_num:null,purchase_date:'',tags:['à compléter'],url:'',image_url:im.data,note:'Ajout rapide depuis une image.'}});state.articles.unshift(...drafts);persist();clearQuickImages();closeModal('quickAddModal');go('catalog',{status:'À compléter'});toast(`${drafts.length} brouillon${drafts.length>1?'s':''} créé${drafts.length>1?'s':''}`)}
@@ -293,7 +318,20 @@ function openNewCollection(preserveTarget=false){if(!preserveTarget)collectionTa
 function createCollection(){const name=val('newCollName').trim();if(!name){toast('Donne un nom à la collection');return}const c={id:'coll-'+Date.now().toString(36),name,emoji:val('newCollEmoji')||'✦',description:val('newCollDesc'),items:[]};if(collectionTarget)c.items.push(collectionTarget);state.collections.unshift(c);persist();closeModal('newCollectionModal');render();toast('Collection créée')}
 function editCollection(id){const c=state.collections.find(x=>x.id===id);if(!c)return;const name=prompt('Nom de la collection',c.name);if(name===null)return;const desc=prompt('Description',c.description||'');c.name=name.trim()||c.name;c.description=desc??c.description;persist();render()}
 function deleteCollection(id){const c=state.collections.find(x=>x.id===id);if(!c||!confirm(`Supprimer la collection « ${c.name} » ? Les éléments resteront disponibles dans l’app.`))return;state.collections=state.collections.filter(x=>x.id!==id);persist();render()}
-function openDataModal(){document.getElementById('dataModalBody').innerHTML=`<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" onclick="exportData()">Exporter mes données</button><button class="btn danger" onclick="Auth.logout()">Se déconnecter</button></div>`;openModal('dataModal')}
+async function openDataModal(){
+  document.getElementById('dataModalBody').innerHTML=`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px"><button class="btn primary" onclick="exportData()">Exporter mes données</button><button class="btn danger" onclick="Auth.logout()">Se déconnecter</button></div><div class="full"><span class="eyebrow">IA — ta clé personnelle</span><p style="color:var(--muted);font-size:12px;margin:6px 0 10px">Chaque compte utilise sa propre clé OpenAI (jamais partagée, jamais visible dans le code). <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">Créer une clé ↗</a></p><input id="aiKeyInput" type="password" placeholder="sk-..." style="width:100%;border:1px solid var(--line);background:var(--card);border-radius:13px;padding:11px 12px;margin-bottom:8px"><button class="btn primary" onclick="saveAIKey()">Enregistrer la clé</button><span id="aiKeyStatus" style="margin-left:8px;font-size:12px;color:var(--muted)"></span></div>`;
+  openModal('dataModal');
+  const s=await DB.getSettings();
+  const input=document.getElementById('aiKeyInput');
+  if(input&&s.openai_api_key)input.placeholder='Clé enregistrée (••••'+s.openai_api_key.slice(-4)+')';
+}
+async function saveAIKey(){
+  const key=document.getElementById('aiKeyInput')?.value.trim();
+  const status=document.getElementById('aiKeyStatus');
+  if(!key){if(status)status.textContent='Colle une clé d\'abord.';return}
+  try{await DB.saveOpenAIKey(key);if(status)status.textContent='✓ Clé enregistrée';document.getElementById('aiKeyInput').value='';toast('Clé IA enregistrée')}
+  catch(e){if(status)status.textContent='Erreur : '+e.message}
+}
 function exportData(){const blob=new Blob([JSON.stringify({version:4,exportedAt:new Date().toISOString(),state},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='wishlist-studio-backup-'+new Date().toISOString().slice(0,10)+'.json';a.click();URL.revokeObjectURL(a.href);toast('Backup exporté')}
 
 // === Démarrage : attend la session avant d'afficher quoi que ce soit ======

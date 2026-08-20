@@ -179,4 +179,29 @@ async function persistState(state, previous) {
   return snapshot(state);
 }
 
-window.DB = { loadState, persistState, snapshot, uploadDataUri };
+// === Réglages personnels (clé API IA "bring your own key") ================
+async function getSettings() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { openai_api_key: '' };
+  const { data } = await supabase.from('user_settings').select('openai_api_key').eq('user_id', user.id).maybeSingle();
+  return data || { openai_api_key: '' };
+}
+async function saveOpenAIKey(key) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Non connectée');
+  const { error } = await supabase.from('user_settings').upsert({ user_id: user.id, openai_api_key: key });
+  if (error) throw error;
+}
+async function analyzeImageAI(dataUri) {
+  const { data: { session } } = await supabase.auth.getSession();
+  const res = await fetch('/api/analyze-image', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` },
+    body: JSON.stringify({ image: dataUri }),
+  });
+  const body = await res.json();
+  if (!res.ok) throw new Error(body.error || 'Erreur IA');
+  return body;
+}
+
+window.DB = { loadState, persistState, snapshot, uploadDataUri, getSettings, saveOpenAIKey, analyzeImageAI };

@@ -175,3 +175,17 @@ create trigger set_updated_at before update on articles for each row execute fun
 create trigger set_updated_at before update on wardrobe_items for each row execute function set_updated_at();
 create trigger set_updated_at before update on outfits for each row execute function set_updated_at();
 create trigger set_updated_at before update on collections for each row execute function set_updated_at();
+
+-- === RÉGLAGES PERSONNELS (clé API IA "bring your own key") ================
+-- Chaque compte peut enregistrer sa propre clé OpenAI. Jamais exposée au
+-- navigateur : uniquement lue côté serveur (fonction /api/analyze-image)
+-- avec la clé service_role, en confirmant l'identité de l'appelant via son
+-- jeton d'authentification Supabase.
+create table if not exists user_settings (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  openai_api_key text,
+  updated_at timestamptz not null default now()
+);
+alter table user_settings enable row level security;
+create policy "own settings only" on user_settings for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create trigger set_updated_at before update on user_settings for each row execute function set_updated_at();
