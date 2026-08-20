@@ -26,3 +26,19 @@ export async function buildWishlistSummary(supabaseAdmin, userId) {
     `Tags les plus utilisés (wishlist + vestiaire) : ${topTags}.`,
   ].join('\n');
 }
+
+// Détail des N dernières pièces activement envisagées à l'achat (pas
+// achetées, pas à la corbeille). Contrairement au résumé ci-dessus, celui-ci
+// grandit avec N — d'où le curseur côté interface pour garder la main sur
+// le coût.
+export async function buildWishlistDetail(supabaseAdmin, userId, limit) {
+  const n = Math.max(0, Math.min(50, Number(limit) || 0));
+  if (!n) return '';
+  const { data } = await supabaseAdmin.from('articles')
+    .select('name,brand,category,subcategory,color,price,tags')
+    .eq('user_id', userId).eq('is_trashed', false).eq('purchased', false)
+    .order('date_added', { ascending: false }).limit(n);
+  if (!data?.length) return '';
+  const lines = data.map(a => `- ${a.name || 'Sans nom'}${a.brand ? ` (${a.brand})` : ''} — ${[a.category, a.color, a.price].filter(Boolean).join(', ')}${a.tags?.length ? ` [${a.tags.join(', ')}]` : ''}`);
+  return `Dernières pièces activement envisagées à l'achat :\n${lines.join('\n')}`;
+}

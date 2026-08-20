@@ -344,9 +344,13 @@ async function openStyleModal(){
   styleImages=profile.images;
   renderStyleModal(profile.style_text);
 }
+function styleMaxWishlistItems(){return Math.min(30,state.articles.filter(a=>!state.trash.includes(a.uid)&&!a.purchased).length)}
 function renderStyleModal(text){
   const hasText=!!(text&&text.trim());
   const n=styleImages.length;
+  const maxItems=styleMaxWishlistItems();
+  const defItems=Math.min(5,maxItems);
+  const defPin=Math.min(6,n);
   document.getElementById('styleModalBody').innerHTML=`
     <label class="full"><span>Mon style, décrit avec mes mots</span><textarea id="styleText" style="min-height:140px">${esc(text||'')}</textarea></label>
     <div class="full" style="margin:2px 0 16px"><button class="btn primary" onclick="saveStyleTextOnly()">Enregistrer le texte</button></div>
@@ -358,22 +362,51 @@ function renderStyleModal(text){
       <span class="eyebrow">Générer / améliorer avec l'IA</span>
       <div style="margin:10px 0">
       ${hasText?`<label class="checkline" style="margin:6px 0"><input type="radio" name="styleMode" value="keep" checked> Améliorer le texte actuel</label><label class="checkline" style="margin:6px 0"><input type="radio" name="styleMode" value="scratch"> Repartir de zéro</label>`:''}
-      <label class="checkline" style="margin:6px 0"><input type="checkbox" id="styleUseWishlist"> Utiliser ma wishlist (résumé léger — marques/couleurs/catégories les plus fréquentes, pas la liste complète)</label>
-      <label class="checkline" style="margin:6px 0"><input type="checkbox" id="styleUsePinterest" onchange="onStylePinterestToggle()" ${n?'':'disabled'}> Utiliser mes captures Pinterest ${n>6?`(<span id="stylePinterestLabel">6 plus récentes</span>)`:''}</label>
-      ${n>6?`<div id="stylePinterestScopeWrap" class="hide" style="margin:6px 0 6px 24px"><label class="checkline"><input type="checkbox" id="stylePinterestDeep" onchange="onStylePinterestToggle()"> Balayage complet — les ${n} images (coûte plus cher, estimation avant de lancer)</label></div>`:''}
+      <label class="checkline" style="margin:6px 0"><input type="checkbox" id="styleUseWishlist" onchange="onStyleSliderChange()"> Utiliser un résumé léger de ma wishlist (marques/couleurs/catégories les plus fréquentes)</label>
+      <div style="margin:14px 0 6px">
+        <label style="display:block;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px">Pièces récentes envisagées à l'achat, en détail : <b id="styleItemCountLabel">${defItems}</b> / ${maxItems}</label>
+        <input type="range" id="styleItemSlider" min="0" max="${maxItems}" value="${defItems}" oninput="onStyleSliderChange()" style="width:100%" ${maxItems?'':'disabled'}>
+      </div>
+      <div style="margin:14px 0 6px">
+        <label style="display:block;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px">Captures Pinterest à utiliser : <b id="stylePinterestCountLabel">${defPin}</b> / ${n}</label>
+        <input type="range" id="stylePinterestSlider" min="0" max="${n}" value="${defPin}" oninput="onStyleSliderChange()" style="width:100%" ${n?'':'disabled'}>
+      </div>
       </div>
       <div id="styleEstimateBox" style="margin:4px 0 10px;font-size:12px;color:var(--muted)"></div>
       <button class="btn primary" id="styleGenerateBtn" onclick="runStyleGenerate()">✨ Générer</button>
     </div>`;
   wireStylePasteZone();
+  onStyleSliderChange();
 }
-function onStylePinterestToggle(){
-  const use=document.getElementById('styleUsePinterest')?.checked;
-  const wrap=document.getElementById('stylePinterestScopeWrap');
-  if(wrap)wrap.classList.toggle('hide',!use);
+// Miroir client (léger) de l'estimation serveur — juste pour un retour
+// instantané pendant qu'on bouge les curseurs, sans appel réseau à chaque
+// mouvement. Le serveur refait le vrai calcul de toute façon.
+function estimateStyleLocal({textChars,imageCount,useWishlistSummary,wishlistItemCount}){
+  const textTokens=Math.ceil(textChars/4);
+  const imageTokens=imageCount*850;
+  const summaryTokens=useWishlistSummary?500:0;
+  const itemTokens=wishlistItemCount*45;
+  const inputTokens=textTokens+imageTokens+summaryTokens+itemTokens+300;
+  const outputTokens=400;
+  const costUSD=(inputTokens/1e6)*0.15+(outputTokens/1e6)*0.60;
+  return {inputTokens,outputTokens,costUSD};
+}
+const STYLE_CONFIRM_THRESHOLD_USD=0.003;
+function onStyleSliderChange(){
+  const itemSlider=document.getElementById('styleItemSlider'),pinSlider=document.getElementById('stylePinterestSlider');
+  const itemLabel=document.getElementById('styleItemCountLabel'),pinLabel=document.getElementById('stylePinterestCountLabel');
+  if(itemLabel&&itemSlider)itemLabel.textContent=itemSlider.value;
+  if(pinLabel&&pinSlider)pinLabel.textContent=pinSlider.value;
   styleDeepConfirmed=false;
-  const box=document.getElementById('styleEstimateBox');if(box)box.innerHTML='';
-  const btn=document.getElementById('styleGenerateBtn');if(btn)btn.textContent='✨ Générer';
+  const btn=document.getElementById('styleGenerateBtn'),box=document.getElementById('styleEstimateBox');
+  if(!btn)return;
+  const text=document.getElementById('styleText')?.value||'';
+  const useWishlistSummary=document.getElementById('styleUseWishlist')?.checked||false;
+  const wishlistItemCount=Number(itemSlider?.value||0);
+  const imageCount=Number(pinSlider?.value||0);
+  const est=estimateStyleLocal({textChars:text.length,imageCount,useWishlistSummary,wishlistItemCount});
+  if(box)box.innerHTML=`Estimation : ≈ ${est.inputTokens+est.outputTokens} tokens, environ <b>${est.costUSD.toFixed(4)} $</b>.`;
+  btn.textContent=est.costUSD>STYLE_CONFIRM_THRESHOLD_USD?`Voir le coût et confirmer`:'✨ Générer';
 }
 function wireStylePasteZone(){
   const zone=document.getElementById('stylePasteZone');const input=document.getElementById('styleFileInput');
@@ -408,18 +441,18 @@ async function runStyleGenerate(){
   const text=document.getElementById('styleText')?.value||'';
   const modeEl=document.querySelector('input[name="styleMode"]:checked');
   const mode=modeEl?modeEl.value:'scratch';
-  const useWishlist=document.getElementById('styleUseWishlist')?.checked||false;
-  const usePinterest=document.getElementById('styleUsePinterest')?.checked||false;
-  const deep=usePinterest&&document.getElementById('stylePinterestDeep')?.checked;
-  const wishlistDetail=useWishlist?'summary':'none';
+  const useWishlistSummary=document.getElementById('styleUseWishlist')?.checked||false;
+  const wishlistItemCount=Number(document.getElementById('styleItemSlider')?.value||0);
+  const imageCount=Number(document.getElementById('stylePinterestSlider')?.value||0);
   const btn=document.getElementById('styleGenerateBtn'),box=document.getElementById('styleEstimateBox');
+  const est=estimateStyleLocal({textChars:text.length,imageCount,useWishlistSummary,wishlistItemCount});
 
-  if(deep&&!styleDeepConfirmed){
+  if(est.costUSD>STYLE_CONFIRM_THRESHOLD_USD&&!styleDeepConfirmed){
     btn.disabled=true;btn.textContent='Calcul de l\'estimation…';
     try{
-      const est=await DB.estimateStyleCost({textChars:text.length,imageCount:styleImages.length,wishlistDetail});
-      box.innerHTML=`Balayage complet estimé à <b>≈ ${est.inputTokens+est.outputTokens} tokens</b>, environ <b>${est.costUSD.toFixed(4)} $</b>.`;
-      btn.textContent=`Confirmer et lancer (~${est.costUSD.toFixed(4)} $)`;
+      const serverEst=await DB.estimateStyleCost({textChars:text.length,imageCount,useWishlistSummary,wishlistItemCount});
+      box.innerHTML=`Cette demande coûte plus que la normale : <b>≈ ${serverEst.inputTokens+serverEst.outputTokens} tokens</b>, environ <b>${serverEst.costUSD.toFixed(4)} $</b>.`;
+      btn.textContent=`Confirmer et lancer (~${serverEst.costUSD.toFixed(4)} $)`;
       styleDeepConfirmed=true;
     }catch(e){box.textContent='Erreur estimation : '+e.message}
     btn.disabled=false;
@@ -428,12 +461,12 @@ async function runStyleGenerate(){
 
   btn.disabled=true;btn.textContent='Génération en cours…';
   try{
-    const imagesToSend=usePinterest?(deep?styleImages:styleImages.slice(-6)).map(p=>p.url):[];
-    const result=await DB.generateStyle({currentText:text,mode,images:imagesToSend,useWishlist,wishlistDetail});
+    const imagesToSend=styleImages.slice(-imageCount).map(p=>p.url);
+    const result=await DB.generateStyle({currentText:text,mode,images:imagesToSend,useWishlistSummary,wishlistItemCount});
     document.getElementById('styleText').value=result.styleText;
     toast('Texte généré — relis et enregistre si ça te convient');
   }catch(e){toast(e.message||'Erreur IA')}
-  finally{btn.disabled=false;btn.textContent='✨ Générer';styleDeepConfirmed=false;box.innerHTML=''}
+  finally{btn.disabled=false;styleDeepConfirmed=false;box.innerHTML='';onStyleSliderChange()}
 }
 
 function exportData(){const blob=new Blob([JSON.stringify({version:4,exportedAt:new Date().toISOString(),state},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='wishlist-studio-backup-'+new Date().toISOString().slice(0,10)+'.json';a.click();URL.revokeObjectURL(a.href);toast('Backup exporté')}

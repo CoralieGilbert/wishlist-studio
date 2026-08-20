@@ -6,17 +6,18 @@
 // (voir /api/estimate-style-cost) — ici on applique en plus un plafond dur
 // pour ne jamais dépendre uniquement de la discipline du client.
 import { getUserFromRequest, supabaseAdmin } from './_lib/supabase-admin.mjs';
-import { buildWishlistSummary } from './_lib/wishlist-summary.mjs';
+import { buildWishlistSummary, buildWishlistDetail } from './_lib/wishlist-summary.mjs';
 
 const MAX_IMAGES = 20;
+const MAX_WISHLIST_ITEMS = 50;
 
-function buildPrompt({ currentText, mode, useWishlist, wishlistContext, hasImages }) {
+function buildPrompt({ currentText, mode, hasWishlistContext, wishlistContext, hasImages }) {
   let p = `Tu aides une personne à rédiger la description de son style vestimentaire personnel, à la première personne, en français, en un seul paragraphe (100 à 200 mots).\n`;
   p += mode === 'keep' && currentText
     ? `Voici son texte actuel à améliorer/compléter (garde son ton, précise-le, ne le remplace pas entièrement) :\n"""${currentText}"""\n`
     : `Elle n'a pas encore de texte : pars de zéro.\n`;
   if (hasImages) p += `Des captures de son board Pinterest / de ses inspirations sont jointes : identifie les tendances visuelles communes (couleurs, coupes, matières, ambiance générale).\n`;
-  if (useWishlist && wishlistContext) p += `Voici un résumé de sa wishlist et de son vestiaire actuel, à utiliser comme indice de ses goûts réels :\n${wishlistContext}\n`;
+  if (hasWishlistContext) p += `Voici des indices sur ses goûts réels (wishlist, vestiaire, pièces envisagées à l'achat) :\n${wishlistContext}\n`;
   p += `Réponds uniquement avec le texte du style, sans titre ni guillemets ni liste à puces.`;
   return p;
 }
@@ -26,18 +27,21 @@ export default async function handler(req, res) {
   const user = await getUserFromRequest(req);
   if (!user) { res.status(401).json({ error: 'Non connectée.' }); return; }
 
-  const { currentText = '', mode = 'keep', images = [], useWishlist = false, wishlistDetail = 'summary' } = req.body || {};
+  const { currentText = '', mode = 'keep', images = [], useWishlistSummary = false, wishlistItemCount = 0 } = req.body || {};
   if (!Array.isArray(images) || images.length > MAX_IMAGES) { res.status(400).json({ error: `Maximum ${MAX_IMAGES} images par génération.` }); return; }
   if (images.some(img => typeof img !== 'string' || !(img.startsWith('data:image/') || img.startsWith('https://')))) { res.status(400).json({ error: 'Image invalide.' }); return; }
+  const itemCount = Math.max(0, Math.min(MAX_WISHLIST_ITEMS, Number(wishlistItemCount) || 0));
 
   const { data: settings } = await supabaseAdmin.from('user_settings').select('openai_api_key').eq('user_id', user.id).single();
   const apiKey = settings?.openai_api_key;
   if (!apiKey) { res.status(400).json({ error: "Aucune clé API enregistrée. Ajoute ta clé OpenAI dans Données & réglages." }); return; }
 
-  let wishlistContext = '';
-  if (useWishlist) wishlistContext = await buildWishlistSummary(supabaseAdmin, user.id);
+  const parts = [];
+  if (useWishlistSummary) parts.push(await buildWishlistSummary(supabaseAdmin, user.id));
+  if (itemCount) parts.push(await buildWishlistDetail(supabaseAdmin, user.id, itemCount));
+  const wishlistContext = parts.filter(Boolean).join('\n\n');
 
-  const content = [{ type: 'text', text: buildPrompt({ currentText, mode, useWishlist, wishlistContext, hasImages: images.length > 0 }) }];
+  const content = [{ type: 'text', text: buildPrompt({ currentText, mode, hasWishlistContext: !!wishlistContext, wishlistContext, hasImages: images.length > 0 }) }];
   images.forEach(img => content.push({ type: 'image_url', image_url: { url: img } }));
 
   try {
