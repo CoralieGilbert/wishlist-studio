@@ -365,7 +365,7 @@ function renderStyleModal(text){
   const defItems=Math.min(5,maxItems);
   const defPin=Math.min(6,n);
   document.getElementById('styleModalBody').innerHTML=`
-    <label class="full"><span>Mon style, décrit avec mes mots</span><textarea id="styleText" style="min-height:140px">${esc(text||'')}</textarea></label>
+    <label class="full"><span>Mon style, décrit avec mes mots</span><textarea id="styleText" style="min-height:140px" onblur="saveStyleTextOnly()">${esc(text||'')}</textarea></label>
     <div class="full" style="margin:2px 0 16px"><button class="btn primary" onclick="saveStyleTextOnly()">Enregistrer le texte</button></div>
     <div class="full"><span class="eyebrow">Captures Pinterest / inspirations (${n})</span>
       <div class="image-preview-grid" id="stylePhotoGrid">${styleImages.map(p=>`<div class="image-preview"><img src="${p.url}" alt=""><button onclick="removeStylePhoto(${p.id})">×</button></div>`).join('')}</div>
