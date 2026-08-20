@@ -190,3 +190,13 @@ create table if not exists user_settings (
 alter table user_settings enable row level security;
 create policy "own settings only" on user_settings for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 create trigger set_updated_at before update on user_settings for each row execute function set_updated_at();
+
+-- === Stockage des photos (bucket "wishlist-photos") ========================
+-- Lecture publique (URLs non répertoriées, cf. décision produit), mais
+-- l'écriture (upload/suppression) nécessite d'être connectée. Sans cette
+-- politique, Supabase Storage refuse tout upload par défaut (vécu : "new row
+-- violates row-level security policy" tant qu'elle n'existe pas).
+create policy "authenticated can manage own bucket files" on storage.objects
+  for all
+  using (bucket_id = 'wishlist-photos' and auth.role() = 'authenticated')
+  with check (bucket_id = 'wishlist-photos' and auth.role() = 'authenticated');
