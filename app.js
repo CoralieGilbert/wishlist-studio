@@ -177,12 +177,25 @@ function goToMediaCarousel(id,index){const track=document.getElementById(`${id}_
 function moveMediaCarousel(id,delta){goToMediaCarousel(id,mediaCarouselIndex(id)+delta)}
 function syncMediaCarousel(track){const id=track?.dataset?.carouselId;if(!id)return;clearTimeout(track.__carouselSync);track.__carouselSync=setTimeout(()=>updateMediaCarousel(id,mediaCarouselIndex(id)),45)}
 function initMediaCarousels(root=document){root.querySelectorAll?.('.media-carousel[id]').forEach(el=>updateMediaCarousel(el.id,Number(el.dataset.carouselCurrent||0)))}
+let outfitAdviceTarget=null;
 function openOutfitDetail(id){
  const o=outfitById(id);if(!o)return;
+ outfitAdviceTarget=o;
  const comps=(o.itemIds||[]).map(byId).filter(Boolean);
  document.getElementById('outfitDetailTitle').textContent=o.name||'Tenue';
- document.getElementById('outfitDetailBody').innerHTML=`${(o.photos||[]).length?`<div class="outfit-detail-photo"><span class="eyebrow">Photo${o.photos.length>1?'s':''} de la tenue</span>${mediaCarousel(o.photos,o.name||'Tenue')}</div>`:''}<div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px"><button class="btn" onclick="openCollectionPicker('${o.id}')">+ Collection</button><button class="btn" onclick="closeModal('outfitDetailModal');openOutfitEditor('${o.id}')">Modifier</button></div>${comps.length?`<span class="eyebrow">Pièces de la tenue</span>${comps.map(x=>{const imgs=itemImages(x);return `<section class="outfit-component"><h3>${esc(x.name)}</h3><p>${esc(x.brand||'Sans marque / Vintage')} · ${esc(x.subcategory||x.category||'')}${imgs.length>1?` · ${imgs.length} photos`:''}</p>${mediaCarousel(imgs,x.name)}</section>`}).join('')}`:'<div class="empty">Cette tenue ne contient encore aucune pièce.</div>'}`;
+ document.getElementById('outfitDetailBody').innerHTML=`${(o.photos||[]).length?`<div class="outfit-detail-photo"><span class="eyebrow">Photo${o.photos.length>1?'s':''} de la tenue</span>${mediaCarousel(o.photos,o.name||'Tenue')}</div>`:''}<div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px"><button class="btn" onclick="openCollectionPicker('${o.id}')">+ Collection</button><button class="btn" onclick="closeModal('outfitDetailModal');openOutfitEditor('${o.id}')">Modifier</button><button class="btn primary" id="outfitAdviceBtn" onclick="runOutfitAdvice()">✨ Comment améliorer cette tenue ?</button></div><div id="outfitAdviceBox" style="margin-bottom:14px;font-size:13px;color:var(--muted)"></div>${comps.length?`<span class="eyebrow">Pièces de la tenue</span>${comps.map(x=>{const imgs=itemImages(x);return `<section class="outfit-component"><h3>${esc(x.name)}</h3><p>${esc(x.brand||'Sans marque / Vintage')} · ${esc(x.subcategory||x.category||'')}${imgs.length>1?` · ${imgs.length} photos`:''}</p>${mediaCarousel(imgs,x.name)}</section>`}).join('')}`:'<div class="empty">Cette tenue ne contient encore aucune pièce.</div>'}`;
  openModal('outfitDetailModal');initMediaCarousels(document.getElementById('outfitDetailBody'))
+}
+async function runOutfitAdvice(){
+ const o=outfitAdviceTarget;if(!o)return;
+ const comps=(o.itemIds||[]).map(byId).filter(Boolean);
+ const btn=document.getElementById('outfitAdviceBtn'),box=document.getElementById('outfitAdviceBox');
+ btn.disabled=true;btn.textContent='Analyse en cours…';
+ try{
+  const advice=await DB.getOutfitAdvice({outfitName:o.name,outfitItems:comps.map(x=>({uid:x.uid,name:x.name,brand:x.brand,category:x.category||x.subcategory,color:x.color||x.color_family})),wardrobeItemLimit:10,wishlistItemLimit:10});
+  box.innerHTML=esc(advice.advice).replace(/\n/g,'<br>');
+ }catch(e){box.textContent=e.message||'Erreur IA'}
+ finally{btn.disabled=false;btn.textContent='✨ Comment améliorer cette tenue ?'}
 }
 function openItemPhotos(uid){
  const x=byId(uid);if(!x)return;
