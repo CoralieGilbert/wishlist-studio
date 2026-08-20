@@ -430,6 +430,7 @@ function wireStylePasteZone(){
     zone.onpaste=async(e)=>{const fs=[];for(const it of (e.clipboardData?.items||[])){if(it.type?.startsWith('image/')){const f=it.getAsFile();if(f)fs.push(f)}}if(fs.length){e.preventDefault();await handleStyleFiles(fs)}};
     zone.ondragover=e=>e.preventDefault();
     zone.ondrop=async(e)=>{e.preventDefault();await handleStyleFiles([...e.dataTransfer.files])};
+    setTimeout(()=>zone.focus(),80);
   }
 }
 async function handleStyleFiles(files){
