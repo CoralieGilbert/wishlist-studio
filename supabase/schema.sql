@@ -138,7 +138,7 @@ create table if not exists collection_items (
 create table if not exists photos (
   id bigint generated always as identity primary key,
   user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
-  owner_type text not null check (owner_type in ('article', 'wardrobe_item', 'outfit')),
+  owner_type text not null check (owner_type in ('article', 'wardrobe_item', 'outfit', 'style_profile')),
   owner_uid text not null,
   url text not null,
   position integer not null default 0,
@@ -184,6 +184,7 @@ create trigger set_updated_at before update on collections for each row execute 
 create table if not exists user_settings (
   user_id uuid primary key references auth.users(id) on delete cascade,
   openai_api_key text,
+  style_text text,
   updated_at timestamptz not null default now()
 );
 alter table user_settings enable row level security;

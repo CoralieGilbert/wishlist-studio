@@ -19,6 +19,7 @@
    <button class="iconbtn" title="Panier" onclick="go('cart')">🛒<span class="counter hide" id="cartCount"></span></button>
    <button class="iconbtn" title="Corbeille" onclick="go('trash')">⌫<span class="counter hide" id="trashCount"></span></button>
    <button class="btn primary" onclick="openQuickAdd()"><span class="label">Ajouter</span> +</button>
+   <button class="iconbtn" title="Mon Style" onclick="openStyleModal()">🎨</button>
    <button class="iconbtn" title="Se déconnecter" onclick="Auth.logout()">⏻</button>
  </div>
 </div></header>
@@ -62,6 +63,7 @@
 <div class="modalback" id="galleryModal"><div class="modal wide"><div class="modalhead"><h2 id="galleryTitle">Photos</h2><button class="close" onclick="closeModal('galleryModal')">×</button></div><div class="modalbody" id="galleryBody"></div></div></div>
 
 <div class="modalback" id="dataModal"><div class="modal"><div class="modalhead"><h2>Données & sauvegarde</h2><button class="close" onclick="closeModal('dataModal')">×</button></div><div class="modalbody" id="dataModalBody"></div></div></div>
+<div class="modalback" id="styleModal"><div class="modal wide"><div class="modalhead"><h2>Mon Style</h2><button class="close" onclick="closeModal('styleModal')">×</button></div><div class="modalbody"><div class="form" id="styleModalBody"></div></div></div></div>
 <div class="lightbox" id="lightbox" onclick="if(event.target===this)closeLightbox()"><button class="close" onclick="closeLightbox()">×</button><img id="lightboxImg"></div>
 <div class="toast" id="toast"></div>
 

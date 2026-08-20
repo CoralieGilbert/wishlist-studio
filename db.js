@@ -192,16 +192,49 @@ async function saveOpenAIKey(key) {
   const { error } = await supabase.from('user_settings').upsert({ user_id: user.id, openai_api_key: key });
   if (error) throw error;
 }
-async function analyzeImageAI(dataUri) {
+async function callApi(path, payload) {
   const { data: { session } } = await supabase.auth.getSession();
-  const res = await fetch('/api/analyze-image', {
+  const res = await fetch(path, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` },
-    body: JSON.stringify({ image: dataUri }),
+    body: JSON.stringify(payload),
   });
   const body = await res.json();
   if (!res.ok) throw new Error(body.error || 'Erreur IA');
   return body;
 }
+async function analyzeImageAI(dataUri) { return callApi('/api/analyze-image', { image: dataUri }); }
+async function estimateStyleCost(params) { return callApi('/api/estimate-style-cost', params); }
+async function generateStyle(params) { return callApi('/api/generate-style', params); }
 
-window.DB = { loadState, persistState, snapshot, uploadDataUri, getSettings, saveOpenAIKey, analyzeImageAI };
+// === Profil "Mon Style" (texte + captures Pinterest) =======================
+async function getStyleProfile() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { style_text: '', images: [] };
+  const [{ data: settings }, { data: photos }] = await Promise.all([
+    supabase.from('user_settings').select('style_text').eq('user_id', user.id).maybeSingle(),
+    supabase.from('photos').select('id,url').eq('owner_type', 'style_profile').eq('owner_uid', user.id).order('position'),
+  ]);
+  return { style_text: settings?.style_text || '', images: photos || [] };
+}
+async function saveStyleText(text) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Non connectée');
+  const { error } = await supabase.from('user_settings').upsert({ user_id: user.id, style_text: text });
+  if (error) throw error;
+}
+async function addStyleImage(dataUri) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Non connectée');
+  const url = await uploadDataUri(dataUri, 'style');
+  const { count } = await supabase.from('photos').select('id', { count: 'exact', head: true }).eq('owner_type', 'style_profile').eq('owner_uid', user.id);
+  const { error } = await supabase.from('photos').insert({ owner_type: 'style_profile', owner_uid: user.id, url, position: count || 0 });
+  if (error) throw error;
+  return url;
+}
+async function removeStyleImage(photoId) {
+  const { error } = await supabase.from('photos').delete().eq('id', photoId);
+  if (error) throw error;
+}
+
+window.DB = { loadState, persistState, snapshot, uploadDataUri, getSettings, saveOpenAIKey, analyzeImageAI, estimateStyleCost, generateStyle, getStyleProfile, saveStyleText, addStyleImage, removeStyleImage };
