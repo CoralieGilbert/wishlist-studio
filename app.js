@@ -376,7 +376,8 @@ function renderStyleModal(text){
       <div style="margin:10px 0">
       ${hasText?`<label class="checkline" style="margin:6px 0"><input type="radio" name="styleMode" value="keep" checked> Améliorer le texte actuel</label><label class="checkline" style="margin:6px 0"><input type="radio" name="styleMode" value="scratch"> Repartir de zéro</label>`:''}
       <label class="checkline" style="margin:6px 0;align-items:flex-start"><input type="checkbox" id="styleUseWishlist" onchange="onStyleSliderChange()" style="margin-top:2px"><span>Utiliser un résumé léger de ma wishlist<br><small style="color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0">marques/couleurs/catégories les plus fréquentes</small></span></label>
-      <div style="margin:14px 0 6px">
+      <p style="font-size:11px;color:var(--muted);margin:12px 0 2px">En complément du résumé ci-dessus (chiffres globaux), le curseur suivant ajoute le détail de pièces précises :</p>
+      <div style="margin:6px 0 6px">
         <label style="display:block;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px">Pièces récentes envisagées à l'achat, en détail : <b id="styleItemCountLabel">${defItems}</b> / ${maxItems}</label>
         <input type="range" id="styleItemSlider" min="0" max="${maxItems}" value="${defItems}" oninput="onStyleSliderChange()" style="width:100%" ${maxItems?'':'disabled'}>
       </div>
