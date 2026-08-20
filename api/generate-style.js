@@ -12,13 +12,19 @@ const MAX_IMAGES = 20;
 const MAX_WISHLIST_ITEMS = 100;
 
 function buildPrompt({ currentText, mode, hasWishlistContext, wishlistContext, hasImages }) {
-  let p = `Tu aides une personne à rédiger la description de son style vestimentaire personnel, à la première personne, en français, en un seul paragraphe (100 à 200 mots).\n`;
+  let p = `Tu es une styliste qui rédige, à la première personne et en français, l'analyse de style vestimentaire personnel de ta cliente.\n`;
   p += mode === 'keep' && currentText
     ? `Voici son texte actuel à améliorer/compléter (garde son ton, précise-le, ne le remplace pas entièrement) :\n"""${currentText}"""\n`
     : `Elle n'a pas encore de texte : pars de zéro.\n`;
-  if (hasImages) p += `Des captures de son board Pinterest / de ses inspirations sont jointes : identifie les tendances visuelles communes (couleurs, coupes, matières, ambiance générale).\n`;
+  if (hasImages) p += `Des captures de son board Pinterest / de ses inspirations sont jointes : appuie-toi dessus pour l'analyse visuelle.\n`;
   if (hasWishlistContext) p += `Voici des indices sur ses goûts réels (wishlist, vestiaire, pièces envisagées à l'achat) :\n${wishlistContext}\n`;
-  p += `Réponds uniquement avec le texte du style, sans titre ni guillemets ni liste à puces.`;
+  p += `Structure la réponse en 4 courts paragraphes, chacun introduit par son titre en gras (**Titre**), sans liste à puces :
+**Silhouettes** — les coupes et volumes qui reviennent (ajusté/ample, longueurs, superpositions...).
+**Matières** — les textures et matières dominantes.
+**Structures** — construction des pièces (drapé, structuré, brut, travaillé...).
+**Style** — l'ambiance générale et les influences.
+Termine par un dernier paragraphe **Mon analyse personnalisée** : une synthèse fine et spécifique à elle (pas de généralités), qui nomme ce qui rend son style reconnaissable.
+Réponds uniquement avec ce texte, sans guillemets.`;
   return p;
 }
 
