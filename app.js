@@ -680,10 +680,10 @@ function renderShoppingModal(){
       <label style="display:block;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px">Pièces de wishlist à considérer : <b id="shopItemCountLabel">${def}</b> / ${max}</label>
       <input type="range" id="shopItemSlider" min="1" max="${max||1}" value="${def||1}" oninput="onShoppingSliderChange()" style="width:100%" ${max?'':'disabled'}>
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
-        <button type="button" class="pillbtn" onclick="setShoppingItemPreset(1)">Ajoutées il y a -1 mois</button>
-        <button type="button" class="pillbtn" onclick="setShoppingItemPreset(3)">-3 mois</button>
-        <button type="button" class="pillbtn" onclick="setShoppingItemPreset(6)">-6 mois</button>
-        <button type="button" class="pillbtn" onclick="setShoppingItemPreset(0)">Toutes les pièces</button>
+        <button type="button" class="btn" onclick="setShoppingItemPreset(1)">Ajoutées il y a -1 mois</button>
+        <button type="button" class="btn" onclick="setShoppingItemPreset(3)">-3 mois</button>
+        <button type="button" class="btn" onclick="setShoppingItemPreset(6)">-6 mois</button>
+        <button type="button" class="btn" onclick="setShoppingItemPreset(0)">Toutes les pièces</button>
       </div>
     </div>
     <div id="shoppingEstimateBox" class="full" style="margin:4px 0 10px;font-size:12px;color:var(--muted)"></div>
