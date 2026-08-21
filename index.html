@@ -33,6 +33,8 @@
   <div class="quickadd-grid">
     <button class="quickadd-choice" onclick="quickManualAdd()"><strong>Ajouter manuellement</strong><span>Créer une fiche complète avec lien, prix, catégorie, tags, etc.</span></button>
     <button class="quickadd-choice" onclick="document.getElementById('quickFileInput').click()"><strong>Choisir des images</strong><span>Depuis ton téléphone ou ton ordinateur. Tu peux en sélectionner plusieurs d’un coup.</span></button>
+    <button class="quickadd-choice" style="grid-column:1/-1" onclick="document.getElementById('quickCaptureInput').click()"><strong>Prendre une photo</strong><span>Ouvre directement l’appareil photo de ton téléphone.</span></button>
+    <input id="quickCaptureInput" type="file" accept="image/*" capture="environment" style="display:none">
     <div class="quickadd-choice" style="grid-column:1/-1">
       <strong>Ajouter par lien</strong>
       <span>Colle le lien d’une page produit : on récupère automatiquement 1 ou 2 photos.</span>
