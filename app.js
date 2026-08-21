@@ -418,6 +418,8 @@ function openModal(id){document.getElementById(id).classList.add('open');request
 
 function openQuickAdd(){
   quickImages=[];renderQuickImages();openModal('quickAddModal');
+  const linkInput=document.getElementById('quickLinkInput');if(linkInput)linkInput.value='';
+  const linkStatus=document.getElementById('quickLinkStatus');if(linkStatus)linkStatus.textContent='';
   const zone=document.getElementById('quickPasteZone');const input=document.getElementById('quickFileInput');
   if(zone){zone.onpaste=handleQuickPaste;zone.ondragover=(e)=>{e.preventDefault();zone.classList.add('drag')};zone.ondragleave=()=>zone.classList.remove('drag');zone.ondrop=(e)=>{e.preventDefault();zone.classList.remove('drag');handleQuickFiles([...e.dataTransfer.files])};setTimeout(()=>zone.focus(),80)}
   if(input)input.onchange=(e)=>handleQuickFiles([...e.target.files]);
@@ -455,7 +457,7 @@ function compressImageFile(file,max=1200,quality=.78){return new Promise((resolv
 function renderQuickImages(){const p=document.getElementById('quickPreview'),c=document.getElementById('quickCount'),b=document.getElementById('quickCreateBtn'),a=document.getElementById('quickAnalyzeBtn');if(p)p.innerHTML=quickImages.map((x,i)=>`<div class="quick-thumb"><img src="${x.data}" alt=""><button title="Retirer" onclick="event.stopPropagation();removeQuickImage(${i})">×</button></div>`).join('');if(c)c.textContent=quickImages.length?`${quickImages.length} image${quickImages.length>1?'s':''} prête${quickImages.length>1?'s':''}`:'Aucune image sélectionnée';if(b){b.disabled=!quickImages.length;b.textContent=quickImages.length?`Créer ${quickImages.length} brouillon${quickImages.length>1?'s':''}`:'Créer les brouillons'}if(a)a.disabled=!quickImages.length}
 async function quickAnalyzeAI(){
   if(!quickImages.length){toast('Ajoute au moins une image d\'abord');return}
-  const btn=document.getElementById('quickAnalyzeBtn');const original=btn?.textContent;
+  const btn=document.getElementById('quickAnalyzeBtn');const original=btn?.innerHTML;
   if(btn){btn.disabled=true;btn.textContent='Analyse en cours…'}
   try{
     const fiche=await DB.analyzeImageAI(quickImages[0].data);
@@ -467,15 +469,20 @@ async function quickAnalyzeAI(){
     if(fiche.category)set('fSuper',fiche.category);
     set('fSub',fiche.subcategory);set('fColor',fiche.color);
     if(fiche.color_family)set('fColorFamily',fiche.color_family);
-    if(fiche.price_num!=null)set('fPriceNum',fiche.price_num);
-    if(fiche.original_price_num!=null)set('fOriginal',String(fiche.original_price_num));
+    if(fiche.price_num!=null){
+      set('fPriceNum',fiche.price_num);
+      set('fPrice',`${fiche.price_num}${fiche.currency?' '+fiche.currency:''}`);
+    }
+    if(fiche.original_price_num!=null)set('fOriginal',`${fiche.original_price_num}${fiche.currency?' '+fiche.currency:''}`);
     if(fiche.currency)set('fCurrency',fiche.currency);
     if(fiche.sale)set('fSale','Oui');
+    if(fiche.url)set('fUrl',fiche.url);
     if(fiche.tags?.length)set('fTags',fiche.tags.join(', '));
     toast('Fiche préremplie par l\'IA — vérifie avant d\'enregistrer');
   }catch(e){
     console.error(e);toast(e.message||'Erreur pendant l\'analyse IA');
-    if(btn){btn.disabled=false;btn.textContent=original}
+  }finally{
+    if(btn){btn.disabled=!quickImages.length;btn.innerHTML=original}
   }
 }
 function removeQuickImage(i){quickImages.splice(i,1);renderQuickImages()}

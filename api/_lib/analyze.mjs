@@ -18,15 +18,17 @@ const SCHEMA = {
     color: { type: ['string', 'null'] },
     color_family: { type: ['string', 'null'], enum: [...COLOR_FAMILIES, null] },
     store: { type: ['string', 'null'] },
+    url: { type: ['string', 'null'] },
     tags: { type: 'array', items: { type: 'string' } },
   },
-  required: ['brand', 'name', 'price_num', 'original_price_num', 'currency', 'sale', 'category', 'subcategory', 'color', 'color_family', 'store', 'tags'],
+  required: ['brand', 'name', 'price_num', 'original_price_num', 'currency', 'sale', 'category', 'subcategory', 'color', 'color_family', 'store', 'url', 'tags'],
   additionalProperties: false,
 };
 
 const SYSTEM_PROMPT = `Tu analyses une capture d'écran ou une photo d'un article (vêtement, chaussure, bijou, accessoire...) trouvé en ligne.
 Extrais uniquement les informations clairement visibles sur l'image. N'invente jamais une donnée incertaine : mets null plutôt que de deviner.
 "sale" = true seulement si un prix barré ou une mention de solde est clairement visible.
+"url" : uniquement si une adresse de page produit COMPLÈTE et entièrement lisible est visible (ex. barre d'adresse d'une capture d'écran de navigateur, du domaine jusqu'au bout du chemin, rien de coupé). Si l'adresse est partiellement visible, tronquée, coupée par le bord de l'image ou illisible en partie, mets null — ne renvoie jamais une adresse incomplète ou devinée.
 "tags" : 2 à 6 mots-clés descriptifs courts en français, seulement si évidents depuis l'image (matière, style, motif...).`;
 
 export async function analyzeImage(dataUri, apiKey) {
