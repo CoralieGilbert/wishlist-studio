@@ -284,8 +284,8 @@ function outfitAdviceHistoryCard(h){
  const n=(h.result?.additions?.length||0)+(h.result?.removals?.length||0);
  const imgs=(h.result?.additions||[]).slice(0,3).map(a=>mainImage(byId(a.uid))).filter(Boolean);
  const date=new Date(h.created_at).toLocaleDateString('fr-CA',{day:'numeric',month:'short'});
- const label=h.occasion||h.query||'Analyse';
- return `<button class="history-card" onclick="openOutfitAdviceHistoryDetail(${h.id})"><div class="history-card-imgs">${imgs.length?imgs.map(i=>`<img src="${i}" alt="">`).join(''):'<div></div>'}</div><div class="history-card-copy"><b>${n} suggestion${n>1?'s':''}</b><span>${esc(date)}</span><p>${esc(label.slice(0,64))}</p></div></button>`;
+ const title=(h.occasion||h.query||`Analyse du ${date}`).slice(0,60);
+ return `<button class="history-card" onclick="openOutfitAdviceHistoryDetail(${h.id})"><div class="history-card-imgs">${imgs.length?imgs.map(i=>`<img src="${i}" alt="">`).join(''):'<div></div>'}</div><div class="history-card-copy"><b>${esc(title)}</b><span>${esc(date)} · ${n} suggestion${n>1?'s':''}</span></div></button>`;
 }
 function openOutfitAdviceHistoryDetail(id){
  const h=outfitAdviceHistoryCache.find(x=>x.id===id);if(!h)return;
@@ -701,9 +701,10 @@ function shoppingHistoryCard(h){
   const imgs=picks.map(p=>mainImage(byId(p.uid))).filter(Boolean).slice(0,3);
   const totals=Object.entries(h.result?.totalsByCurrency||{}).map(([c,v])=>`${v.toFixed(0)} ${c}`).join(' + ')||'—';
   const date=new Date(h.created_at).toLocaleDateString('fr-CA',{day:'numeric',month:'short'});
+  const title=h.query?h.query.slice(0,60):`Panier du ${date}`;
   return `<button class="history-card" onclick="openShoppingHistoryDetail(${h.id})">
     <div class="history-card-imgs">${imgs.length?imgs.map(i=>`<img src="${i}" alt="">`).join(''):'<div></div>'}</div>
-    <div class="history-card-copy"><b>${esc(totals)}</b><span>${esc(date)} · ${picks.length} pièce${picks.length>1?'s':''}</span>${h.query?`<p>${esc(h.query.slice(0,64))}</p>`:''}</div>
+    <div class="history-card-copy"><b>${esc(title)}</b><span>${esc(date)} · ${esc(totals)} · ${picks.length} pièce${picks.length>1?'s':''}</span></div>
   </button>`;
 }
 function moveHistoryCarousel(id,delta){
