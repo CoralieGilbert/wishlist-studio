@@ -263,4 +263,27 @@ async function deleteShoppingGeneration(id) {
   if (error) throw error;
 }
 
-window.DB = { loadState, persistState, snapshot, uploadDataUri, getSettings, saveOpenAIKey, analyzeImageAI, estimateStyleCost, generateStyle, getStyleProfile, saveStyleText, addStyleImage, removeStyleImage, estimateShoppingCost, runShoppingAssistant, estimateOutfitCost, getOutfitAdvice, saveShoppingGeneration, listShoppingGenerations, deleteShoppingGeneration };
+// === Historique Conseils IA (par tenue) ====================================
+async function saveOutfitAdviceGeneration({ outfitUid, query, source, occasion, budget, currency, result }) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Non connectée');
+  const { data, error } = await supabase.from('outfit_advice_generations')
+    .insert({ user_id: user.id, outfit_uid: outfitUid, query: query || null, source: source || null, occasion: occasion || null, budget: budget || null, currency: currency || null, result })
+    .select().single();
+  if (error) throw error;
+  return data;
+}
+async function listOutfitAdviceGenerations(outfitUid, limit = 20) {
+  const { data, error } = await supabase.from('outfit_advice_generations')
+    .select('id,outfit_uid,query,source,occasion,budget,currency,result,created_at')
+    .eq('outfit_uid', outfitUid)
+    .order('created_at', { ascending: false }).limit(limit);
+  if (error) throw error;
+  return data || [];
+}
+async function deleteOutfitAdviceGeneration(id) {
+  const { error } = await supabase.from('outfit_advice_generations').delete().eq('id', id);
+  if (error) throw error;
+}
+
+window.DB = { loadState, persistState, snapshot, uploadDataUri, getSettings, saveOpenAIKey, analyzeImageAI, estimateStyleCost, generateStyle, getStyleProfile, saveStyleText, addStyleImage, removeStyleImage, estimateShoppingCost, runShoppingAssistant, estimateOutfitCost, getOutfitAdvice, saveShoppingGeneration, listShoppingGenerations, deleteShoppingGeneration, saveOutfitAdviceGeneration, listOutfitAdviceGenerations, deleteOutfitAdviceGeneration };

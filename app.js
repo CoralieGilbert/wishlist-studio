@@ -84,7 +84,7 @@ function navRender(){
 }
 function setCount(id,n){const el=document.getElementById(id);el.textContent=n;el.classList.toggle('hide',!n)}
 function go(page,filter={}){route={page,filter};window.scrollTo({top:0,behavior:'smooth'});const v=document.getElementById('view');v.classList.add('view-out');setTimeout(()=>{render();v.classList.remove('view-out')},110)}
-function render(){navRender();const v=document.getElementById('view'); if(route.page==='home')v.innerHTML=homeView();else if(route.page==='catalog')v.innerHTML=catalogView();else if(route.page==='wardrobe')v.innerHTML=wardrobeView();else if(route.page==='collections')v.innerHTML=collectionsView();else if(route.page==='purchases')v.innerHTML=purchasesView();else if(route.page==='cart')v.innerHTML=cartView();else if(route.page==='trash')v.innerHTML=trashView();else if(route.page==='style'){v.innerHTML=`<div class="catalog-head"><div><h1>Mon Style</h1></div></div><div class="form" id="styleModalBody"><p style="color:var(--muted)">Chargement…</p></div>`;loadStyleView()}else if(route.page==='shopping'){v.innerHTML=`<div class="catalog-head"><div><h1>Personal Shopper</h1></div></div><div class="form" id="shoppingModalBody"></div>`;renderShoppingModal()}wireAfterRender()}
+function render(){navRender();const v=document.getElementById('view'); if(route.page==='home')v.innerHTML=homeView();else if(route.page==='catalog')v.innerHTML=catalogView();else if(route.page==='wardrobe')v.innerHTML=wardrobeView();else if(route.page==='collections')v.innerHTML=collectionsView();else if(route.page==='purchases')v.innerHTML=purchasesView();else if(route.page==='cart')v.innerHTML=cartView();else if(route.page==='trash')v.innerHTML=trashView();else if(route.page==='outfit'){const o=outfitById(route.filter.id);v.innerHTML=o?outfitDetailView(o):'<div class="empty">Tenue introuvable.</div>';if(o)initMediaCarousels(v)}else if(route.page==='style'){v.innerHTML=`<div class="catalog-head"><div><h1>Mon Style</h1></div></div><div class="form" id="styleModalBody"><p style="color:var(--muted)">Chargement…</p></div>`;loadStyleView()}else if(route.page==='shopping'){v.innerHTML=`<div class="catalog-head"><div><h1>Personal Shopper</h1></div></div><div class="form" id="shoppingModalBody"></div>`;renderShoppingModal()}wireAfterRender()}
 function countBy(arr,key){return arr.reduce((a,x)=>{const k=x[key]||'Autre';a[k]=(a[k]||0)+1;return a},{})}
 function uniq(arr){return [...new Set(arr.filter(Boolean))].sort((a,b)=>String(a).localeCompare(String(b),'fr'))}
 function priceTotals(items){const t={};items.forEach(x=>{if(Number.isFinite(Number(x.price_num))){const c=x.currency&&x.currency!=='Non précisée'?x.currency:'?';t[c]=(t[c]||0)+Number(x.price_num)}});return t}
@@ -173,14 +173,13 @@ function removeFromWardrobe(uid){const x=byId(uid);if(!x)return;if(!confirm(`Ret
 function wardrobeItemCard(x,i=0){const imgs=itemImages(x),decision=wardrobeDecision(x),linked=outfitsForItem(x.uid);return `<article class="wardrobe-card" style="animation-delay:${Math.min(i,14)*35}ms"><div class="wardrobe-card-media"><img src="${imgs[0]||''}" alt="${esc(x.name)}"><span class="wardrobe-badge">${isPurchased(x)?'ACHETÉ':'DÉJÀ POSSÉDÉ'}</span>${imgs.length>1?`<span class="photo-count">${imgs.length} photos</span>`:''}</div><div class="wardrobe-card-copy"><div class="pin-brand">${esc(x.brand||'Sans marque / Vintage')}</div><h3>${esc(x.name)}</h3><p>${esc(x.subcategory||x.category||'')} ${x.color_family?`· ${esc(x.color_family)}`:''}</p>${linked.length?`<button class="wardrobe-usage" onclick="openItemOutfits('${x.uid}')">Dans ${linked.length} tenue${linked.length>1?'s':''} · voir</button>`:''}<select class="wardrobe-decision" onchange="setWardrobeStatus('${x.uid}',this.value)">${['À trier','Garder','Peut-être','Donner / vendre','Réparer / retoucher'].map(v=>`<option ${decision===v?'selected':''}>${v}</option>`).join('')}</select><div class="wardrobe-card-foot">${imgs.length>1?`<button onclick="openItemPhotos('${x.uid}')">Photos · ${imgs.length}</button>`:''}${linked.length?`<button onclick="openItemOutfits('${x.uid}')">Tenues · ${linked.length}</button>`:''}<button onclick="openCollectionPicker('${x.uid}')">+ Collection</button><button onclick="openItemEditor('${x.uid}')">Modifier</button><button onclick="removeFromWardrobe('${x.uid}')">Retirer</button></div></div></article>`}
 function wardrobeView(){const all=liveItems().filter(isInWardrobe).sort((a,b)=>(b.purchase_date||b.date_added||'').localeCompare(a.purchase_date||a.date_added||''));const filter=route.filter?.wardrobe_status||'';const xs=filter?all.filter(x=>wardrobeDecision(x)===filter):all;const outfits=(state.outfits||[]).slice().sort((a,b)=>(b.date_added||'').localeCompare(a.date_added||''));const toSort=all.filter(x=>wardrobeDecision(x)==='À trier').length;return `<div class="catalog-head"><div><h1>Vestiaire</h1></div><div class="catalog-tools"><button class="btn" onclick="openOwnedItemEditor()">+ Pièce déjà possédée</button><button class="btn primary" onclick="openOutfitEditor()">+ Créer une tenue</button></div></div><div class="wardrobe-summary"><div class="wardrobe-stat"><span>Pièces</span><b>${all.length}</b></div><div class="wardrobe-stat"><span>À trier</span><b>${toSort}</b></div><div class="wardrobe-stat"><span>Tenues</span><b>${outfits.length}</b></div></div><div class="wardrobe-filters">${['','À trier','Garder','Peut-être','Donner / vendre','Réparer / retoucher'].map(v=>`<button class="pillbtn ${filter===v?'active':''}" onclick="setWardrobeFilter('${esc(v)}')">${v||'Tout'}</button>`).join('')}</div><div class="wardrobe-section-head"><h2>Tenues</h2><div class="wardrobe-section-actions"><button class="btn" onclick="openOutfitEditor()">+ Nouvelle tenue</button></div></div>${outfits.length?`<div class="outfit-grid">${outfits.map(outfitCard).join('')}</div>`:'<div class="empty">Aucune tenue enregistrée pour le moment. Tu peux en créer une à partir des pièces de ton vestiaire.</div>'}<div class="wardrobe-section-head"><h2>Pièces</h2><div class="wardrobe-section-actions"><span class="pill">${xs.length} affichée${xs.length>1?'s':''}</span></div></div>${xs.length?`<div class="wardrobe-grid">${xs.map(wardrobeItemCard).join('')}</div>`:'<div class="empty">Aucune pièce dans ce filtre.</div>'}`}
 function openOwnedItemEditor(){openItemEditor(null,'owned')}
-function outfitCard(o){const imgs=outfitCoverImages(o).slice(0,4);const n=(o.itemIds||[]).length;return `<article class="outfit-card" style="position:relative"><button class="circle" title="Conseils IA" onclick="event.stopPropagation();openOutfitAdviceDirect('${o.id}')" style="position:absolute;right:9px;top:9px;z-index:2">${ICON_SPARKLE}</button><button style="border:0;padding:0;background:none;width:100%;text-align:left" onclick="openOutfitDetail('${o.id}')"><div class="outfit-cover ${imgs.length<=1?'one':''}">${imgs.length?imgs.map(img=>`<img src="${img}" alt="">`).join(''):'<div></div>'}<span class="outfit-cover-shade"></span><span class="outfit-cover-copy"><span>TENUE · ${n} pièce${n>1?'s':''}</span><strong>${esc(o.name||'Tenue sans titre')}</strong></span></div><div class="outfit-copy"><p>${esc((o.tags||[]).join(' · '))}</p></div></button><div class="outfit-copy" style="padding-top:0"><div class="outfit-actions"><button onclick="openOutfitDetail('${o.id}')">Voir</button><button onclick="openCollectionPicker('${o.id}')">+ Collection</button><button onclick="openOutfitEditor('${o.id}')">Modifier</button></div></div></article>`}
-function openOutfitAdviceDirect(id){openOutfitDetail(id);toggleOutfitAdviceChoice()}
+function outfitCard(o){const imgs=outfitCoverImages(o).slice(0,4);const n=(o.itemIds||[]).length;return `<article class="outfit-card" style="position:relative"><button class="circle" title="Conseils IA" onclick="event.stopPropagation();openOutfitAdvice('${o.id}')" style="position:absolute;right:9px;top:9px;z-index:2">${ICON_SPARKLE}</button><button style="border:0;padding:0;background:none;width:100%;text-align:left" onclick="closeModal('galleryModal');go('outfit',{id:'${o.id}'})"><div class="outfit-cover ${imgs.length<=1?'one':''}">${imgs.length?imgs.map(img=>`<img src="${img}" alt="">`).join(''):'<div></div>'}<span class="outfit-cover-shade"></span><span class="outfit-cover-copy"><span>TENUE · ${n} pièce${n>1?'s':''}</span><strong>${esc(o.name||'Tenue sans titre')}</strong></span></div><div class="outfit-copy"><p>${esc((o.tags||[]).join(' · '))}</p></div></button><div class="outfit-copy" style="padding-top:0"><div class="outfit-actions"><button onclick="closeModal('galleryModal');go('outfit',{id:'${o.id}'})">Voir</button><button onclick="openCollectionPicker('${o.id}')">+ Collection</button><button onclick="openOutfitEditor('${o.id}')">Modifier</button></div></div></article>`}
 function renderOutfitPhotoPreview(){const el=document.getElementById('outfitPhotoPreview');if(!el)return;el.innerHTML=outfitDraftPhotos.map((img,i)=>`<div class="image-preview"><img src="${img}" alt=""><button onclick="removeOutfitPhoto(${i})">×</button></div>`).join('')}
 function removeOutfitPhoto(i){outfitDraftPhotos.splice(i,1);renderOutfitPhotoPreview()}
 async function addOutfitFiles(files){for(const f of files){if(!f.type?.startsWith('image/'))continue;outfitDraftPhotos.push(await compressImageFile(f,1200,.8))}renderOutfitPhotoPreview();toast(`${files.length} photo${files.length>1?'s':''} ajoutée${files.length>1?'s':''}`)}
 function openOutfitEditor(id=null){outfitEditTarget=id;const o=id?outfitById(id):{name:'',itemIds:[],photos:[],tags:[],note:'',date_added:new Date().toISOString().slice(0,10)};if(!o)return;outfitDraftPhotos=[...(o.photos||[])];const wardrobe=liveItems().filter(isInWardrobe);document.getElementById('outfitModalTitle').textContent=id?'Modifier la tenue':'Créer une tenue';document.getElementById('outfitModalBody').innerHTML=`<div class="form"><label class="full"><span>Nom de la tenue</span><input id="oName" value="${esc(o.name||'')}" placeholder="Ex. Bureau gothique, dîner été…"></label><label><span>Date</span><input id="oDate" type="date" value="${esc(o.date_added||new Date().toISOString().slice(0,10))}"></label><label><span>Tags</span><input id="oTags" value="${esc((o.tags||[]).join(', '))}" placeholder="bureau, pluie, date night…"></label><label class="full"><span>Note</span><textarea id="oNote">${esc(o.note||'')}</textarea></label><div class="full dropzone" id="outfitPasteZone" tabindex="0"><input id="outfitPhotoInput" type="file" accept="image/*" multiple><div>Photo de la tenue facultative : importe, glisse ou colle une ou plusieurs images.</div></div><div class="full image-preview-grid" id="outfitPhotoPreview"></div><div class="full"><span class="eyebrow">Pièces de la tenue</span><div class="outfit-picker">${wardrobe.map(x=>`<div class="outfit-pick"><input type="checkbox" data-outfit-item="${x.uid}" ${(o.itemIds||[]).includes(x.uid)?'checked':''}><img src="${mainImage(x)}" alt=""><label>${esc(x.name)}</label></div>`).join('')}</div></div></div>${id?`<div style="margin-top:14px"><button class="btn danger" onclick="deleteOutfit('${id}')">Supprimer la tenue</button></div>`:''}`;openModal('outfitModal');renderOutfitPhotoPreview();document.getElementById('outfitPhotoInput')?.addEventListener('change',e=>addOutfitFiles([...e.target.files]));const zone=document.getElementById('outfitPasteZone');if(zone){zone.onpaste=async(e)=>{const fs=[];for(const it of (e.clipboardData?.items||[])){if(it.type?.startsWith('image/')){const f=it.getAsFile();if(f)fs.push(f)}}if(fs.length){e.preventDefault();await addOutfitFiles(fs)}};zone.ondragover=e=>e.preventDefault();zone.ondrop=async(e)=>{e.preventDefault();await addOutfitFiles([...e.dataTransfer.files])}}}
 function saveOutfitForm(){const itemIds=[...document.querySelectorAll('[data-outfit-item]:checked')].map(x=>x.dataset.outfitItem);const data={name:val('oName').trim()||'Tenue sans titre',date_added:val('oDate')||new Date().toISOString().slice(0,10),tags:val('oTags').split(',').map(x=>x.trim()).filter(Boolean),note:val('oNote').trim(),itemIds,photos:[...new Set(outfitDraftPhotos.filter(Boolean))]};if(outfitEditTarget){const i=state.outfits.findIndex(o=>o.uid===outfitEditTarget);if(i>=0)state.outfits[i]=Object.assign({},state.outfits[i],data)}else{data.uid='outfit-'+Date.now().toString(36);data.id=data.uid;state.outfits.unshift(data)}persist();closeModal('outfitModal');render();toast(outfitEditTarget?'Tenue modifiée':'Tenue créée');outfitEditTarget=null;outfitDraftPhotos=[]}
-function deleteOutfit(id){const o=outfitById(id);if(!o||!confirm(`Supprimer la tenue « ${o.name} » ?`))return;state.outfits=state.outfits.filter(x=>x.uid!==o.uid);state.collections.forEach(c=>c.items=(c.items||[]).filter(x=>x!==id));persist();closeModal('outfitModal');closeModal('outfitDetailModal');render();toast('Tenue supprimée')}
+function deleteOutfit(id){const o=outfitById(id);if(!o||!confirm(`Supprimer la tenue « ${o.name} » ?`))return;state.outfits=state.outfits.filter(x=>x.uid!==o.uid);state.collections.forEach(c=>c.items=(c.items||[]).filter(x=>x!==id));persist();closeModal('outfitModal');closeModal('outfitAdviceModal');if(route.page==='outfit'&&route.filter.id===id)go('wardrobe');else render();toast('Tenue supprimée')}
 let mediaCarouselSeq=0;
 function mediaCarousel(images,alt='',extraClass=''){
  const imgs=[...new Set((images||[]).filter(Boolean))];
@@ -195,33 +194,173 @@ function goToMediaCarousel(id,index){const track=document.getElementById(`${id}_
 function moveMediaCarousel(id,delta){goToMediaCarousel(id,mediaCarouselIndex(id)+delta)}
 function syncMediaCarousel(track){const id=track?.dataset?.carouselId;if(!id)return;clearTimeout(track.__carouselSync);track.__carouselSync=setTimeout(()=>updateMediaCarousel(id,mediaCarouselIndex(id)),45)}
 function initMediaCarousels(root=document){root.querySelectorAll?.('.media-carousel[id]').forEach(el=>updateMediaCarousel(el.id,Number(el.dataset.carouselCurrent||0)))}
+function outfitDetailView(o){
+ const comps=(o.itemIds||[]).map(byId).filter(Boolean);
+ return `<div class="catalog-head"><div><button class="textbtn" onclick="go('wardrobe')">← Vestiaire</button><h1>${esc(o.name||'Tenue')}</h1></div><div class="catalog-tools"><button class="btn primary" onclick="openOutfitAdvice('${o.id}')">${ICON_SPARKLE} Conseils IA</button><button class="btn" onclick="openCollectionPicker('${o.id}')">+ Collection</button><button class="btn" onclick="openOutfitEditor('${o.id}')">Modifier</button></div></div>${(o.photos||[]).length?`<div class="outfit-detail-photo"><span class="eyebrow">Photo${o.photos.length>1?'s':''} de la tenue</span>${mediaCarousel(o.photos,o.name||'Tenue')}</div>`:''}${comps.length?`<span class="eyebrow">Pièces de la tenue</span>${comps.map(x=>{const imgs=itemImages(x);return `<section class="outfit-component"><h3>${esc(x.name)}</h3><p>${esc(x.brand||'Sans marque / Vintage')} · ${esc(x.subcategory||x.category||'')}${imgs.length>1?` · ${imgs.length} photos`:''}</p>${mediaCarousel(imgs,x.name)}</section>`}).join('')}`:'<div class="empty">Cette tenue ne contient encore aucune pièce.</div>'}`
+}
+function addItemToOutfit(outfitUid,itemUid){
+ const o=state.outfits.find(x=>x.uid===outfitUid);if(!o)return;
+ o.itemIds=o.itemIds||[];
+ if(!o.itemIds.includes(itemUid))o.itemIds.push(itemUid);
+ persist();
+ if(outfitAdviceTarget&&outfitAdviceTarget.uid===outfitUid)outfitAdviceTarget=o;
+ if(route.page==='outfit'&&route.filter.id===outfitUid){const v=document.getElementById('view');v.innerHTML=outfitDetailView(o);initMediaCarousels(v)}
+ toast('Pièce ajoutée à la tenue')
+}
+function removeItemFromOutfit(outfitUid,itemUid){
+ const o=state.outfits.find(x=>x.uid===outfitUid);if(!o)return;
+ o.itemIds=(o.itemIds||[]).filter(x=>x!==itemUid);
+ persist();
+ if(outfitAdviceTarget&&outfitAdviceTarget.uid===outfitUid)outfitAdviceTarget=o;
+ if(route.page==='outfit'&&route.filter.id===outfitUid){const v=document.getElementById('view');v.innerHTML=outfitDetailView(o);initMediaCarousels(v)}
+ toast('Pièce retirée de la tenue')
+}
+function addSuggestionToCart(uid){
+ if(!state.cart.includes(uid))state.cart.push(uid);
+ persist();
+ toast('Ajouté au panier')
+}
+
+// === Conseils IA (par tenue) : avis + suggestions ancrées, historique ======
 let outfitAdviceTarget=null;
-function openOutfitDetail(id){
+let outfitAdviceHistoryCache=[];
+let outfitAdviceDeepConfirmed=false;
+const OUTFIT_ADVICE_CONFIRM_THRESHOLD_USD=0.01;
+
+async function openOutfitAdvice(id){
  const o=outfitById(id);if(!o)return;
  outfitAdviceTarget=o;
- const comps=(o.itemIds||[]).map(byId).filter(Boolean);
- document.getElementById('outfitDetailTitle').textContent=o.name||'Tenue';
- document.getElementById('outfitDetailBody').innerHTML=`<div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:10px"><button class="btn primary" onclick="toggleOutfitAdviceChoice()">${ICON_SPARKLE} Conseils IA</button><button class="btn" onclick="openCollectionPicker('${o.id}')">+ Collection</button><button class="btn" onclick="closeModal('outfitDetailModal');openOutfitEditor('${o.id}')">Modifier</button></div><div id="outfitAdviceChoice" class="hide" style="margin-bottom:14px;font-size:13px"><span style="color:var(--muted)">Regarder dans :</span> <label class="checkline" style="display:inline-flex;margin:0 8px"><input type="radio" name="oaSource" value="wardrobe" checked> Mon vestiaire</label><label class="checkline" style="display:inline-flex;margin:0 8px"><input type="radio" name="oaSource" value="wishlist"> Ma wishlist</label><label class="checkline" style="display:inline-flex;margin:0 8px"><input type="radio" name="oaSource" value="both"> Les deux</label><button class="btn primary" id="outfitAdviceBtn" onclick="runOutfitAdvice()" style="margin-left:8px">Lancer</button></div><div id="outfitAdviceBox" style="margin-bottom:14px;font-size:13px;color:var(--muted)"></div>${(o.photos||[]).length?`<div class="outfit-detail-photo"><span class="eyebrow">Photo${o.photos.length>1?'s':''} de la tenue</span>${mediaCarousel(o.photos,o.name||'Tenue')}</div>`:''}${comps.length?`<span class="eyebrow">Pièces de la tenue</span>${comps.map(x=>{const imgs=itemImages(x);return `<section class="outfit-component"><h3>${esc(x.name)}</h3><p>${esc(x.brand||'Sans marque / Vintage')} · ${esc(x.subcategory||x.category||'')}${imgs.length>1?` · ${imgs.length} photos`:''}</p>${mediaCarousel(imgs,x.name)}</section>`}).join('')}`:'<div class="empty">Cette tenue ne contient encore aucune pièce.</div>'}`;
- openModal('outfitDetailModal');initMediaCarousels(document.getElementById('outfitDetailBody'))
+ document.getElementById('outfitAdviceModalTitle').textContent=`Conseils IA · ${o.name||'Tenue'}`;
+ document.getElementById('outfitAdviceModalBody').innerHTML='<p style="color:var(--muted)">Chargement…</p>';
+ openModal('outfitAdviceModal');
+ try{ outfitAdviceHistoryCache=await DB.listOutfitAdviceGenerations(id); }
+ catch(e){ console.error(e); outfitAdviceHistoryCache=[]; }
+ renderOutfitAdviceModal();
 }
-function toggleOutfitAdviceChoice(){document.getElementById('outfitAdviceChoice')?.classList.toggle('hide')}
-async function runOutfitAdvice(){
+function outfitSuggestionCard(pick,kind){
+ const x=byId(pick.uid);if(!x)return '';
+ const actionBtn=kind==='remove'
+   ?`<button onclick="removeItemFromOutfit('${outfitAdviceTarget.uid}','${pick.uid}')">Retirer de la tenue</button>`
+   :kind==='add-wardrobe'
+     ?`<button onclick="addItemToOutfit('${outfitAdviceTarget.uid}','${pick.uid}')">Ajouter à cette tenue</button>`
+     :`<button onclick="addSuggestionToCart('${pick.uid}')">Ajouter au panier</button>`;
+ return `<div class="listitem"><img src="${mainImage(x)}" alt=""><div><h3>${esc(x.name)}</h3><p style="color:var(--muted);font-size:11px">${esc(pick.reason||'')}</p></div><div class="list-actions">${actionBtn}</div></div>`;
+}
+function outfitAdviceResultHTML(result){
+ const additions=(result.additions||[]).filter(a=>byId(a.uid));
+ const removals=(result.removals||[]).filter(r=>byId(r.uid));
+ return `<p style="color:var(--muted);font-size:13px;white-space:pre-line">${esc(result.advice||'')}</p>${additions.length?`<div style="margin-top:12px"><span class="eyebrow">Suggestions d'ajout</span><div class="listview" style="margin-top:8px">${additions.map(a=>outfitSuggestionCard(a,a.source==='wardrobe'?'add-wardrobe':'add-wishlist')).join('')}</div></div>`:''}${removals.length?`<div style="margin-top:12px"><span class="eyebrow">Suggestions de retrait</span><div class="listview" style="margin-top:8px">${removals.map(r=>outfitSuggestionCard(r,'remove')).join('')}</div></div>`:''}`;
+}
+function outfitAdviceFormHTML(){
+ return `<div style="margin-top:20px;border-top:1px solid var(--line);padding-top:16px">
+  <span class="eyebrow">Relancer une analyse</span>
+  <div style="margin:10px 0 6px"><label class="checkline" style="display:inline-flex;margin:4px 8px 4px 0"><input type="radio" name="oaSource" value="wardrobe" checked onchange="onOutfitAdviceInputChange()"> Mon vestiaire</label><label class="checkline" style="display:inline-flex;margin:4px 8px"><input type="radio" name="oaSource" value="wishlist" onchange="onOutfitAdviceInputChange()"> Ma wishlist</label><label class="checkline" style="display:inline-flex;margin:4px 8px"><input type="radio" name="oaSource" value="both" onchange="onOutfitAdviceInputChange()"> Les deux</label></div>
+  <div class="form" style="grid-template-columns:1fr 1fr;margin-top:6px">
+   <label class="full"><span>Occasion / contexte</span><input id="oaOccasion" placeholder="Ex. bureau, soirée, voyage…" oninput="onOutfitAdviceInputChange()"></label>
+   <label><span>Budget max (suggestions wishlist)</span><input id="oaBudget" type="number" min="0" step="1" placeholder="Facultatif" oninput="onOutfitAdviceInputChange()"></label>
+   <label><span>Devise</span><input id="oaCurrency" value="CAD"></label>
+   <label class="full"><span>Précisions (facultatif)</span><textarea id="oaQuery" placeholder="Ce que tu veux changer, une contrainte particulière…" oninput="onOutfitAdviceInputChange()"></textarea></label>
+  </div>
+  <div id="outfitAdviceEstimateBox" style="margin:8px 0 10px;font-size:12px;color:var(--muted)"></div>
+  <button class="btn primary" id="outfitAdviceBtn" onclick="runOutfitAdviceGenerate()">${ICON_SPARKLE} Lancer une nouvelle analyse</button>
+ </div>`;
+}
+function renderOutfitAdviceModal(){
+ const latest=outfitAdviceHistoryCache[0];
+ const body=document.getElementById('outfitAdviceModalBody');
+ body.innerHTML=`<div id="outfitAdviceLatest">${latest?outfitAdviceResultHTML(latest.result):'<div class="empty">Aucune analyse pour l’instant.</div>'}</div>${outfitAdviceFormHTML()}<div id="outfitAdviceHistoryBox"></div>`;
+ onOutfitAdviceInputChange();
+ renderOutfitAdviceHistoryCarousel();
+}
+let outfitAdviceHistorySeq=0;
+function renderOutfitAdviceHistoryCarousel(){
+ const box=document.getElementById('outfitAdviceHistoryBox');if(!box)return;
+ if(outfitAdviceHistoryCache.length<2){box.innerHTML='';return}
+ const id=`outfitAdviceHistory_${++outfitAdviceHistorySeq}`;
+ box.innerHTML=`<div style="margin-top:26px;border-top:1px solid var(--line);padding-top:16px"><span class="eyebrow">Analyses précédentes (${outfitAdviceHistoryCache.length})</span><div class="history-carousel" id="${id}"><button class="media-carousel-arrow prev" type="button" aria-label="Analyses plus récentes" onclick="moveHistoryCarousel('${id}',-1)">‹</button><div class="history-carousel-track" id="${id}_track">${outfitAdviceHistoryCache.map(outfitAdviceHistoryCard).join('')}</div><button class="media-carousel-arrow next" type="button" aria-label="Analyses plus anciennes" onclick="moveHistoryCarousel('${id}',1)">›</button></div></div>`;
+}
+function outfitAdviceHistoryCard(h){
+ const n=(h.result?.additions?.length||0)+(h.result?.removals?.length||0);
+ const imgs=(h.result?.additions||[]).slice(0,3).map(a=>mainImage(byId(a.uid))).filter(Boolean);
+ const date=new Date(h.created_at).toLocaleDateString('fr-CA',{day:'numeric',month:'short'});
+ const label=h.occasion||h.query||'Analyse';
+ return `<button class="history-card" onclick="openOutfitAdviceHistoryDetail(${h.id})"><div class="history-card-imgs">${imgs.length?imgs.map(i=>`<img src="${i}" alt="">`).join(''):'<div></div>'}</div><div class="history-card-copy"><b>${n} suggestion${n>1?'s':''}</b><span>${esc(date)}</span><p>${esc(label.slice(0,64))}</p></div></button>`;
+}
+function openOutfitAdviceHistoryDetail(id){
+ const h=outfitAdviceHistoryCache.find(x=>x.id===id);if(!h)return;
+ const date=new Date(h.created_at).toLocaleDateString('fr-CA',{day:'numeric',month:'long',year:'numeric'});
+ document.getElementById('galleryTitle').textContent=`Analyse du ${date}`;
+ document.getElementById('galleryBody').innerHTML=`${h.occasion||h.query?`<p style="color:var(--muted);font-size:12px;margin-top:0">${esc([h.occasion,h.query].filter(Boolean).join(' · '))}</p>`:''}${outfitAdviceResultHTML(h.result)}<div class="full" style="margin-top:14px"><button class="btn danger" onclick="deleteOutfitAdviceHistoryEntry(${h.id})">Supprimer cet historique</button></div>`;
+ openModal('galleryModal');
+}
+async function deleteOutfitAdviceHistoryEntry(id){
+ if(!confirm('Supprimer cette analyse de l’historique ?'))return;
+ try{
+  await DB.deleteOutfitAdviceGeneration(id);
+  outfitAdviceHistoryCache=outfitAdviceHistoryCache.filter(h=>h.id!==id);
+  closeModal('galleryModal');
+  renderOutfitAdviceModal();
+  toast('Historique supprimé');
+ }catch(e){toast(e.message||'Erreur de suppression')}
+}
+function estimateOutfitAdviceLocal(){
+ const o=outfitAdviceTarget;
+ const outfitItemCount=o?(o.itemIds||[]).length:0;
+ const source=document.querySelector('input[name="oaSource"]:checked')?.value||'wardrobe';
+ const wardrobeItemCount=source!=='wishlist'?10:0;
+ const wishlistItemCount=source!=='wardrobe'?10:0;
+ const queryChars=(val('oaQuery')||'').length+(val('oaOccasion')||'').length;
+ const outfitTokens=outfitItemCount*45,wardrobeTokens=wardrobeItemCount*45,wishlistTokens=wishlistItemCount*45,styleTokens=250+6*850,queryTokens=Math.ceil(queryChars/4),promptOverhead=300;
+ const inputTokens=outfitTokens+wardrobeTokens+wishlistTokens+styleTokens+queryTokens+promptOverhead,outputTokens=2600;
+ const costUSD=(inputTokens/1e6)*0.25+(outputTokens/1e6)*2.00;
+ return {inputTokens,outputTokens,costUSD};
+}
+function onOutfitAdviceInputChange(){
+ outfitAdviceDeepConfirmed=false;
+ const btn=document.getElementById('outfitAdviceBtn'),box=document.getElementById('outfitAdviceEstimateBox');
+ if(!btn)return;
+ const est=estimateOutfitAdviceLocal();
+ if(box)box.innerHTML=`Estimation : ≈ ${est.inputTokens+est.outputTokens} tokens, environ <b>${est.costUSD.toFixed(4)} $</b>.`;
+ btn.innerHTML=est.costUSD>OUTFIT_ADVICE_CONFIRM_THRESHOLD_USD?'Voir le coût et confirmer':`${ICON_SPARKLE} Lancer une nouvelle analyse`;
+}
+async function runOutfitAdviceGenerate(){
  const o=outfitAdviceTarget;if(!o)return;
  const comps=(o.itemIds||[]).map(byId).filter(Boolean);
  const source=document.querySelector('input[name="oaSource"]:checked')?.value||'wardrobe';
- const btn=document.getElementById('outfitAdviceBtn'),box=document.getElementById('outfitAdviceBox');
+ const occasion=val('oaOccasion').trim();
+ const budgetRaw=val('oaBudget');const budget=budgetRaw===''?null:Number(budgetRaw);
+ const currency=(val('oaCurrency')||'CAD').trim()||'CAD';
+ const query=val('oaQuery').trim();
+ const btn=document.getElementById('outfitAdviceBtn'),box=document.getElementById('outfitAdviceEstimateBox');
+ const est=estimateOutfitAdviceLocal();
+
+ if(est.costUSD>OUTFIT_ADVICE_CONFIRM_THRESHOLD_USD&&!outfitAdviceDeepConfirmed){
+  btn.disabled=true;btn.textContent='Calcul de l\'estimation…';
+  try{
+   const serverEst=await DB.estimateOutfitCost({outfitItemCount:comps.length,wardrobeItemCount:source!=='wishlist'?10:0,wishlistItemCount:source!=='wardrobe'?10:0,queryChars:(query+occasion).length});
+   box.innerHTML=`Cette demande coûte plus que la normale : <b>≈ ${serverEst.inputTokens+serverEst.outputTokens} tokens</b>, environ <b>${serverEst.costUSD.toFixed(4)} $</b>.`;
+   btn.textContent=`Confirmer et lancer (~${serverEst.costUSD.toFixed(4)} $)`;
+   outfitAdviceDeepConfirmed=true;
+  }catch(e){box.textContent='Erreur estimation : '+e.message}
+  btn.disabled=false;
+  return;
+ }
+
  btn.disabled=true;btn.textContent='Analyse en cours…';
  try{
-  const advice=await DB.getOutfitAdvice({outfitName:o.name,outfitItems:comps.map(x=>({uid:x.uid,name:x.name,brand:x.brand,category:x.category||x.subcategory,color:x.color||x.color_family})),wardrobeItemLimit:source!=='wishlist'?10:0,wishlistItemLimit:source!=='wardrobe'?10:0});
-  box.innerHTML=esc(advice.advice).replace(/\n/g,'<br>');
- }catch(e){box.textContent=e.message||'Erreur IA'}
- finally{btn.disabled=false;btn.textContent='Lancer'}
+  const result=await DB.getOutfitAdvice({outfitName:o.name,outfitItems:comps.map(x=>({uid:x.uid,name:x.name,brand:x.brand,category:x.category||x.subcategory,color:x.color||x.color_family})),wardrobeItemLimit:source!=='wishlist'?10:0,wishlistItemLimit:source!=='wardrobe'?10:0,occasion,budget,currency,query});
+  const saved=await DB.saveOutfitAdviceGeneration({outfitUid:o.uid,query,source,occasion,budget,currency,result});
+  outfitAdviceHistoryCache.unshift(saved);
+  renderOutfitAdviceModal();
+  toast('Analyse enregistrée');
+ }catch(e){toast(e.message||'Erreur IA')}
+ finally{outfitAdviceDeepConfirmed=false;btn.disabled=false;btn.textContent=`${ICON_SPARKLE} Lancer une nouvelle analyse`}
 }
 function openItemPhotos(uid){
  const x=byId(uid);if(!x)return;
  const imgs=itemImages(x),linked=outfitsForItem(uid);
  document.getElementById('galleryTitle').textContent=x.name||'Photos';
- document.getElementById('galleryBody').innerHTML=`${mediaCarousel(imgs,x.name,'gallery-modal-carousel')}${linked.length?`<div class="item-outfit-links"><h3>Tenues avec cette pièce</h3><div class="item-outfit-chips">${linked.map(o=>`<button onclick="closeModal('galleryModal');openOutfitDetail('${o.id}')">${esc(o.name||'Tenue')}</button>`).join('')}</div></div>`:''}`;
+ document.getElementById('galleryBody').innerHTML=`${mediaCarousel(imgs,x.name,'gallery-modal-carousel')}${linked.length?`<div class="item-outfit-links"><h3>Tenues avec cette pièce</h3><div class="item-outfit-chips">${linked.map(o=>`<button onclick="closeModal('galleryModal');go('outfit',{id:'${o.id}'})">${esc(o.name||'Tenue')}</button>`).join('')}</div></div>`:''}`;
  openModal('galleryModal');initMediaCarousels(document.getElementById('galleryBody'))
 }
 function openItemOutfits(uid){const x=byId(uid);if(!x)return;const linked=outfitsForItem(uid);document.getElementById('galleryTitle').textContent=`Tenues avec ${x.name||'cette pièce'}`;document.getElementById('galleryBody').innerHTML=linked.length?`<div class="outfit-grid">${linked.map(outfitCard).join('')}</div>`:'<div class="empty">Cette pièce n’est encore utilisée dans aucune tenue.</div>';openModal('galleryModal')}

@@ -36,14 +36,15 @@ export function estimateShoppingAssistant({ candidateCount = 0 }) {
   return { inputTokens, outputTokens, costUSD: priceUSD(inputTokens, outputTokens) };
 }
 
-const OUTPUT_TOKENS_OUTFIT = 900;
-export function estimateOutfitAdvice({ outfitItemCount = 0, wardrobeItemCount = 0, wishlistItemCount = 0 }) {
+const OUTPUT_TOKENS_OUTFIT = 2600; // avis + additions/removals structurés, plus le raisonnement invisible
+export function estimateOutfitAdvice({ outfitItemCount = 0, wardrobeItemCount = 0, wishlistItemCount = 0, queryChars = 0 }) {
   const outfitTokens = outfitItemCount * TOKENS_PER_WISHLIST_ITEM;
   const wardrobeTokens = wardrobeItemCount * TOKENS_PER_WISHLIST_ITEM;
   const wishlistTokens = wishlistItemCount * TOKENS_PER_WISHLIST_ITEM;
   const styleTokens = 250 + 6 * TOKENS_PER_IMAGE;
+  const queryTokens = Math.ceil(queryChars / 4);
   const promptOverhead = 300;
-  const inputTokens = outfitTokens + wardrobeTokens + wishlistTokens + styleTokens + promptOverhead;
+  const inputTokens = outfitTokens + wardrobeTokens + wishlistTokens + styleTokens + queryTokens + promptOverhead;
   const outputTokens = OUTPUT_TOKENS_OUTFIT;
   return { inputTokens, outputTokens, costUSD: priceUSD(inputTokens, outputTokens) };
 }
