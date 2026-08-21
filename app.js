@@ -375,7 +375,61 @@ function openAllCartLinks(){
   links.forEach(u=>window.open(u,'_blank','noopener'));
   toast(`${links.length} lien${links.length>1?'s':''} ouvert${links.length>1?'s':''}`)
 }
-function cartView(){const xs=state.cart.map(byId).filter(x=>x&&!state.trash.includes(x.uid)),tot=priceTotals(xs);return `<div class="catalog-head"><div><h1>Panier</h1></div><div class="catalog-tools"><button class="btn primary" onclick="go('shopping')">${ICON_SPARKLE} Personal Shopper</button><button class="btn" onclick="openAllCartLinks()">Ouvrir tous les liens ↗</button><button class="btn" onclick="state.cart=[];persist();render()">Vider le panier</button></div></div><div class="totals">${Object.entries(tot).map(([c,v])=>`<div class="totalchip"><span>Total ${esc(c)}</span><b>${v.toFixed(2)}</b></div>`).join('')||'<span class="pill">Aucun prix additionnable</span>'}<div class="totalchip"><span>Articles</span><b>${xs.length}</b></div></div>${xs.length?`<div class="cart-batchbar"><label><input id="selectAllCart" type="checkbox" onchange="toggleAllCartSelections(this.checked)"> Tout sélectionner</label><span class="cart-selected-count" id="cartSelectedCount">0 sélectionné</span><button class="btn primary" onclick="openBatchPurchaseFromCart()">✓ Marquer comme acheté</button></div><div class="listview">${xs.map(x=>listItem(x,'cart')).join('')}</div>`:'<div class="empty">Ton panier est vide.</div>'}`}
+function updateCartFilter(){
+  route.filter=Object.assign({},route.filter,{
+    brand:document.getElementById('cartBrandFilter')?.value||'',
+    store:document.getElementById('cartStoreFilter')?.value||'',
+    category:document.getElementById('cartCategoryFilter')?.value||'',
+    sort:document.getElementById('cartSortFilter')?.value||'cartOrder',
+    group:document.getElementById('cartGroupFilter')?.value||'',
+  });
+  document.getElementById('view').innerHTML=cartView();
+}
+function cartView(){
+  const f=route.filter||{};
+  const allCart=state.cart.map(byId).filter(x=>x&&!state.trash.includes(x.uid));
+  const brands=uniq(allCart.map(x=>x.brand)),stores=uniq(allCart.map(x=>x.store)),cats=uniq(allCart.map(x=>x.subcategory||x.category));
+  let xs=allCart.slice();
+  if(f.brand)xs=xs.filter(x=>x.brand===f.brand);
+  if(f.store)xs=xs.filter(x=>x.store===f.store);
+  if(f.category)xs=xs.filter(x=>(x.subcategory||x.category)===f.category);
+  const sort=f.sort||'cartOrder';
+  if(sort==='wishlistOrder')xs.sort((a,b)=>(b.date_added||'').localeCompare(a.date_added||''));
+  else if(sort==='priceAsc')xs.sort((a,b)=>(a.price_num??1e12)-(b.price_num??1e12));
+  else if(sort==='priceDesc')xs.sort((a,b)=>(b.price_num??-1)-(a.price_num??-1));
+  const tot=priceTotals(xs);
+  const group=f.group||'';
+  const groupLabel=x=>group==='store'?(x.store||'Sans magasin'):group==='category'?(x.subcategory||x.category||'Sans catégorie'):group==='brand'?(x.brand||'Sans marque'):null;
+  let listHtml;
+  if(group&&xs.length){
+    const buckets=new Map();
+    xs.forEach(x=>{const k=groupLabel(x);if(!buckets.has(k))buckets.set(k,[]);buckets.get(k).push(x)});
+    const keys=[...buckets.keys()].sort((a,b)=>a.localeCompare(b,'fr'));
+    listHtml=keys.map(k=>`<div class="wardrobe-section-head"><h2 style="font-size:clamp(20px,3vw,28px)">${esc(k)}</h2><span class="pill">${buckets.get(k).length}</span></div><div class="listview">${buckets.get(k).map(x=>listItem(x,'cart')).join('')}</div>`).join('');
+  }else{
+    listHtml=`<div class="listview">${xs.map(x=>listItem(x,'cart')).join('')}</div>`;
+  }
+  return `<div class="catalog-head"><div><h1>Panier</h1></div><div class="catalog-tools"><button class="btn primary" onclick="go('shopping')">${ICON_SPARKLE} Personal Shopper</button><button class="btn" onclick="openAllCartLinks()">Ouvrir tous les liens ↗</button><button class="btn" onclick="state.cart=[];persist();render()">Vider le panier</button></div></div>
+  <div class="totals">${Object.entries(tot).map(([c,v])=>`<div class="totalchip"><span>Total ${esc(c)}</span><b>${v.toFixed(2)}</b></div>`).join('')||'<span class="pill">Aucun prix additionnable</span>'}<div class="totalchip"><span>Articles</span><b>${xs.length}</b></div></div>
+  ${allCart.length?`<div class="filterbar" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr));margin-bottom:14px">
+    <select id="cartBrandFilter" onchange="updateCartFilter()"><option value="">Toutes marques</option>${brands.map(b=>`<option ${f.brand===b?'selected':''}>${esc(b)}</option>`).join('')}</select>
+    <select id="cartStoreFilter" onchange="updateCartFilter()"><option value="">Tous magasins</option>${stores.map(s=>`<option ${f.store===s?'selected':''}>${esc(s)}</option>`).join('')}</select>
+    <select id="cartCategoryFilter" onchange="updateCartFilter()"><option value="">Tous types</option>${cats.map(c=>`<option ${f.category===c?'selected':''}>${esc(c)}</option>`).join('')}</select>
+    <select id="cartSortFilter" onchange="updateCartFilter()">
+      <option value="cartOrder" ${sort==='cartOrder'?'selected':''}>Ordre d'ajout au panier</option>
+      <option value="wishlistOrder" ${sort==='wishlistOrder'?'selected':''}>Ordre d'ajout à la wishlist</option>
+      <option value="priceAsc" ${sort==='priceAsc'?'selected':''}>Prix ↑</option>
+      <option value="priceDesc" ${sort==='priceDesc'?'selected':''}>Prix ↓</option>
+    </select>
+    <select id="cartGroupFilter" onchange="updateCartFilter()">
+      <option value="">Pas de regroupement</option>
+      <option value="store" ${group==='store'?'selected':''}>Séparer par magasin</option>
+      <option value="category" ${group==='category'?'selected':''}>Séparer par type</option>
+      <option value="brand" ${group==='brand'?'selected':''}>Séparer par marque</option>
+    </select>
+  </div>`:''}
+  ${xs.length?`<div class="cart-batchbar"><label><input id="selectAllCart" type="checkbox" onchange="toggleAllCartSelections(this.checked)"> Tout sélectionner</label><span class="cart-selected-count" id="cartSelectedCount">0 sélectionné</span><button class="btn primary" onclick="openBatchPurchaseFromCart()">✓ Marquer comme acheté</button></div>${listHtml}`:allCart.length?'<div class="empty">Aucun article ne correspond à ces filtres.</div>':'<div class="empty">Ton panier est vide.</div>'}`;
+}
 function trashView(){const xs=state.trash.map(byId).filter(Boolean);return `<div class="catalog-head"><div><h1>Corbeille</h1></div><div class="catalog-tools"><button class="btn danger" onclick="emptyTrash()">Vider définitivement</button></div></div>${xs.length?`<div class="listview">${xs.map(x=>listItem(x,'trash')).join('')}</div>`:'<div class="empty">La corbeille est vide.</div>'}`}
 function listItem(x,mode){if(mode==='cart')return `<div class="listitem cart-listitem"><label class="cart-select" title="Sélectionner"><input type="checkbox" data-cart-select="${x.uid}" onchange="updateCartSelectedCount()"></label><img src="${mainImage(x)}" alt=""><div><h3>${esc(x.name)}</h3><p>${esc(x.brand)} · ${esc(x.store)} · ${esc(x.price||'')}</p></div><div class="list-actions">${x.url?`<a class="btn" href="${safeUrl(x.url)}" target="_blank" rel="noopener">Voir l'article ↗</a>`:''}<button class="btn" onclick="openItemEditor('${x.uid}')">Modifier</button><button class="btn" onclick="openPurchaseModal(['${x.uid}'])">✓ Acheté</button><button class="btn" onclick="toggleCart('${x.uid}')">Retirer du panier</button></div></div>`;return `<div class="listitem"><img src="${mainImage(x)}" alt=""><div><h3>${esc(x.name)}</h3><p>${esc(x.brand)} · ${esc(x.store)} · ${esc(x.price||'')}</p></div><div class="list-actions"><button class="btn primary" onclick="restoreItem('${x.uid}')">Restaurer</button><button class="btn danger" onclick="deleteForever('${x.uid}')">Supprimer</button></div></div>`}
 function wireAfterRender(){
