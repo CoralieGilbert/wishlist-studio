@@ -157,8 +157,8 @@ async function syncFlags(column, current, previous, state) {
   const removed = previous.filter(uid => !current.includes(uid));
   if (!added.length && !removed.length) return;
   const tableOf = new Map([...state.articles.map(a => [a.uid, 'articles']), ...state.wardrobeItems.map(w => [w.uid, 'wardrobe_items'])]);
-  for (const uid of added) { const t = tableOf.get(uid); if (t) await supabase.from(t).update({ [column]: true }).eq('uid', uid); }
-  for (const uid of removed) { const t = tableOf.get(uid); if (t) await supabase.from(t).update({ [column]: false }).eq('uid', uid); }
+  for (const uid of added) { const t = tableOf.get(uid); if (t) { const { error } = await supabase.from(t).update({ [column]: true }).eq('uid', uid); if (error) throw error; } }
+  for (const uid of removed) { const t = tableOf.get(uid); if (t) { const { error } = await supabase.from(t).update({ [column]: false }).eq('uid', uid); if (error) throw error; } }
 }
 
 async function persistState(state, previous) {
