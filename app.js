@@ -360,7 +360,7 @@ async function runOutfitAdviceGenerate(){
   renderOutfitAdviceModal();
   toast('Analyse enregistrée');
  }catch(e){toast(e.message||'Erreur IA')}
- finally{outfitAdviceDeepConfirmed=false;btn.disabled=false;btn.textContent=`${ICON_SPARKLE} Lancer une nouvelle analyse`}
+ finally{outfitAdviceDeepConfirmed=false;btn.disabled=false;btn.innerHTML=`${ICON_SPARKLE} Lancer une nouvelle analyse`}
 }
 
 // === Avis IA (sélection libre du panier) : avis + tenues possibles + ajouts/retraits, historique global
@@ -497,7 +497,7 @@ async function runCartAdviceGenerate(){
   renderCartAdviceHistoryCarousel();
   toast('Analyse enregistrée');
  }catch(e){toast(e.message||'Erreur IA')}
- finally{cartAdviceDeepConfirmed=false;btn.disabled=false;btn.textContent=`${ICON_SPARKLE} Demander un avis`}
+ finally{cartAdviceDeepConfirmed=false;btn.disabled=false;onCartAdviceInputChange()}
 }
 
 function openItemPhotos(uid){
