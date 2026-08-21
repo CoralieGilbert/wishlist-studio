@@ -218,14 +218,15 @@ Déjà fait et au-delà du cahier des charges d'origine : BYOK IA, Personal
 Shopper budget-aware, profil de style, conseils de tenue groundés
 Pinterest, ajout par lien, avis IA panier, réimport d'un backup JSON
 (`importDataFile()` dans `app.js` — restauration complète via le même
-mécanisme de sync par diff que `persist()`, pas une fusion).
+mécanisme de sync par diff que `persist()`, pas une fusion), PWA
+installable (`manifest.json` + `sw.js` — service worker minimal, sert
+juste l'installabilité/le shell statique, pas d'ambition hors-ligne réelle
+puisque l'app dépend entièrement de Supabase/OpenAI).
 
 Pas encore fait, à checker si besoin :
 - Détection automatique de doublons wishlist/vestiaire.
 - Suggestion automatique de tags/catégorie cohérents avec le reste de la
   base (au-delà de ce que `analyze-image` propose déjà par photo).
-- PWA / installation écran d'accueil (mentionné "souhaitable" dans le
-  cahier des charges, pas vu de manifest/service worker dans `index.html`).
 
 ## 7. Notes utiles pour bosser dessus
 
