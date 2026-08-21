@@ -42,7 +42,15 @@ async function fetchHtml(url) {
   try {
     const res = await fetch(url, {
       signal: controller.signal,
-      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; WishlistStudioBot/1.0)' },
+      headers: {
+        // Un UA "bot" explicite se fait bloquer par la plupart des WAF sur
+        // simple pattern-matching ; un UA de navigateur standard passe les
+        // filtres les plus simples (mais pas les protections type DataDome/
+        // Cloudflare qui font du fingerprinting au-delà du User-Agent).
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+        'Accept-Language': 'fr-CA,fr;q=0.9,en-CA;q=0.8,en;q=0.7',
+      },
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const reader = res.body.getReader();
