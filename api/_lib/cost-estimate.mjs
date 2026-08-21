@@ -1,8 +1,8 @@
 // Estimation approximative de tokens/coût avant de lancer un appel IA plus
 // gros que la normale (garde-fou demandé pour le "balayage complet").
-// Tarifs gpt-4o-mini au 2026-08 : 0.15 $/1M tokens entrée, 0.60 $/1M sortie.
-const PRICE_IN_PER_M = 0.15;
-const PRICE_OUT_PER_M = 0.60;
+// Tarifs gpt-5-mini au 2026-08 : 0.25 $/1M tokens entrée, 2.00 $/1M sortie.
+const PRICE_IN_PER_M = 0.25;
+const PRICE_OUT_PER_M = 2.00;
 const TOKENS_PER_IMAGE = 850; // ordre de grandeur pour une image compressée en detail "auto"
 const OUTPUT_TOKENS_STYLE = 950;
 

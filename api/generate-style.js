@@ -60,7 +60,7 @@ export default async function handler(req, res) {
     const openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify({ model: 'gpt-4o-mini', messages: [{ role: 'user', content }], max_tokens: 1100 }),
+      body: JSON.stringify({ model: 'gpt-5-mini', messages: [{ role: 'user', content }], max_completion_tokens: 1600 }),
     });
     if (!openaiRes.ok) {
       const t = await openaiRes.text().catch(() => '');

@@ -78,10 +78,10 @@ ${budgetNum ? `- Privilégie fortement les pièces dont la devise est ${currency
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'gpt-5-mini',
         messages: [{ role: 'user', content: prompt }],
         response_format: { type: 'json_schema', json_schema: { name: 'panier', strict: true, schema: SCHEMA } },
-        max_tokens: 1600,
+        max_completion_tokens: 2400,
       }),
     });
     if (!openaiRes.ok) {

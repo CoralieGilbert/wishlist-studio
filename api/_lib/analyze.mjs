@@ -34,7 +34,7 @@ export async function analyzeImage(dataUri, apiKey) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
     body: JSON.stringify({
-      model: 'gpt-4o-mini',
+      model: 'gpt-5-mini',
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
         { role: 'user', content: [
@@ -43,7 +43,7 @@ export async function analyzeImage(dataUri, apiKey) {
         ] },
       ],
       response_format: { type: 'json_schema', json_schema: { name: 'article_fiche', strict: true, schema: SCHEMA } },
-      max_tokens: 500,
+      max_completion_tokens: 800,
     }),
   });
   if (!res.ok) {

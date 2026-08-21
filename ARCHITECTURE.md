@@ -38,7 +38,7 @@
   Functions. Utilisent la clé `service_role` de Supabase (jamais exposée au
   navigateur) pour vérifier le jeton d'auth de l'appelant et lire ses
   réglages privés.
-- **IA :** OpenAI `gpt-4o-mini`, appelée uniquement côté serveur, avec la
+- **IA :** OpenAI `gpt-5-mini`, appelée uniquement côté serveur, avec la
   clé API **personnelle** de chaque utilisateur (bring-your-own-key, stockée
   dans `user_settings.openai_api_key`, jamais codée en dur, jamais vue par
   le front). Toutes les réponses IA structurées utilisent
@@ -68,7 +68,7 @@ api/
     analyze.mjs              prompt + schema JSON pour analyze-image
     link-preview.mjs         parsing HTML (og:image, twitter:image, JSON-LD) sans IA
     wishlist-summary.mjs     construit des résumés COMPACTS (jamais les fiches complètes) pour limiter les tokens
-    cost-estimate.mjs        formules d'estimation de coût (tarifs gpt-4o-mini codés en dur, à date)
+    cost-estimate.mjs        formules d'estimation de coût (tarifs gpt-5-mini codés en dur, à date)
 supabase/schema.sql    schéma complet + RLS + policies storage (source de vérité du schéma DB)
 scripts/                scripts Node ponctuels (migration monolithe → Supabase). Pas utilisés à l'exécution.
 migration-output/       généré localement par les scripts, gitignored, étape intermédiaire jetable
@@ -98,6 +98,11 @@ pour plusieurs comptes même si un seul est utilisé aujourd'hui.
   `owner_uid` + `position`). Une seule table plutôt que 4 quasi-identiques.
 - **`user_settings`** — `openai_api_key` (BYOK) + `style_text` (profil
   "Mon Style" texte).
+- **`shopping_generations`** — historique des paniers générés par le
+  Personal Shopper. `result` (jsonb) contient la réponse complète de l'IA
+  (picks/note/totaux) telle que reçue ; `query`/`budget`/`currency`
+  dupliqués en colonnes pour un affichage rapide dans le carrousel
+  d'historique sans avoir à reparser le jsonb.
 - **Storage** — bucket `wishlist-photos` ; upload/delete réservés aux
   utilisateurs authentifiés, lecture publique (URLs non répertoriées).
 
@@ -134,7 +139,7 @@ Menu principal (4 items) + sous-menu contextuel sous "Wishlist" :
   (carrousel), sélecteur de collection, "Données & sauvegarde" (export
   JSON + clé API + déconnexion).
 
-## 5. Fonctionnalités IA (toutes en `gpt-4o-mini`, BYOK, coût affiché avant appel)
+## 5. Fonctionnalités IA (toutes en `gpt-5-mini`, BYOK, coût affiché avant appel)
 
 - **Analyse d'image → fiche préremplie** (`analyze-image`) : depuis le
   Quick Add, bouton "Analyser avec l'IA" sur une image collée/déposée.
@@ -155,7 +160,11 @@ Menu principal (4 items) + sous-menu contextuel sous "Wishlist" :
   de la wishlist (uid réels transmis en candidats — jamais de produit
   inventé). Les totaux par devise sont recalculés côté serveur après coup
   (jamais fait confiance au calcul de l'IA, qui peut additionner des
-  devises différentes par erreur).
+  devises différentes par erreur). Chaque génération réussie est
+  sauvegardée dans `shopping_generations` (table dédiée, pas d'appel
+  serveur — écriture directe via `db.js`/RLS) et réapparaît dans un
+  carrousel d'historique sous le formulaire, avec vue détail (modal
+  `galleryModal` réutilisée) et suppression individuelle.
 - **Conseils de tenue** (`outfit-advice`) : avis + 1-3 suggestions
   concrètes sur une tenue, explicitement ancré sur le texte de style et
   les images Pinterest de l'utilisatrice (pas de règles de mode

@@ -241,4 +241,26 @@ async function removeStyleImage(photoId) {
   if (error) throw error;
 }
 
-window.DB = { loadState, persistState, snapshot, uploadDataUri, getSettings, saveOpenAIKey, analyzeImageAI, estimateStyleCost, generateStyle, getStyleProfile, saveStyleText, addStyleImage, removeStyleImage, estimateShoppingCost, runShoppingAssistant, estimateOutfitCost, getOutfitAdvice };
+// === Historique Personal Shopper (paniers générés, sauvegardés) ===========
+async function saveShoppingGeneration({ query, budget, currency, result }) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Non connectée');
+  const { data, error } = await supabase.from('shopping_generations')
+    .insert({ user_id: user.id, query: query || null, budget: budget || null, currency: currency || null, result })
+    .select().single();
+  if (error) throw error;
+  return data;
+}
+async function listShoppingGenerations(limit = 30) {
+  const { data, error } = await supabase.from('shopping_generations')
+    .select('id,query,budget,currency,result,created_at')
+    .order('created_at', { ascending: false }).limit(limit);
+  if (error) throw error;
+  return data || [];
+}
+async function deleteShoppingGeneration(id) {
+  const { error } = await supabase.from('shopping_generations').delete().eq('id', id);
+  if (error) throw error;
+}
+
+window.DB = { loadState, persistState, snapshot, uploadDataUri, getSettings, saveOpenAIKey, analyzeImageAI, estimateStyleCost, generateStyle, getStyleProfile, saveStyleText, addStyleImage, removeStyleImage, estimateShoppingCost, runShoppingAssistant, estimateOutfitCost, getOutfitAdvice, saveShoppingGeneration, listShoppingGenerations, deleteShoppingGeneration };

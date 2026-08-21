@@ -191,6 +191,23 @@ alter table user_settings enable row level security;
 create policy "own settings only" on user_settings for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 create trigger set_updated_at before update on user_settings for each row execute function set_updated_at();
 
+-- === HISTORIQUE PERSONAL SHOPPER ============================================
+-- Chaque panier généré par l'IA est sauvegardé (résultat complet en jsonb :
+-- picks, note, totaux) pour qu'il ne disparaisse plus en quittant la page.
+-- Historique en lecture/écriture simple, pas besoin d'un schéma relationnel.
+create table if not exists shopping_generations (
+  id bigint generated always as identity primary key,
+  user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  query text,
+  budget numeric,
+  currency text,
+  result jsonb not null,
+  created_at timestamptz not null default now()
+);
+create index if not exists shopping_generations_user_idx on shopping_generations(user_id, created_at desc);
+alter table shopping_generations enable row level security;
+create policy "own rows only" on shopping_generations for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
 -- === Stockage des photos (bucket "wishlist-photos") ========================
 -- Lecture publique (URLs non répertoriées, cf. décision produit), mais
 -- l'écriture (upload/suppression) nécessite d'être connectée. Sans cette

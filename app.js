@@ -420,10 +420,10 @@ function estimateStyleLocal({textChars,imageCount,useWishlistSummary,wishlistIte
   const itemTokens=wishlistItemCount*45;
   const inputTokens=textTokens+imageTokens+summaryTokens+itemTokens+300;
   const outputTokens=950;
-  const costUSD=(inputTokens/1e6)*0.15+(outputTokens/1e6)*0.60;
+  const costUSD=(inputTokens/1e6)*0.25+(outputTokens/1e6)*2.00;
   return {inputTokens,outputTokens,costUSD};
 }
-const STYLE_CONFIRM_THRESHOLD_USD=0.003;
+const STYLE_CONFIRM_THRESHOLD_USD=0.01;
 function onStyleSliderChange(){
   const itemSlider=document.getElementById('styleItemSlider'),pinSlider=document.getElementById('stylePinterestSlider');
   const itemLabel=document.getElementById('styleItemCountLabel'),pinLabel=document.getElementById('stylePinterestCountLabel');
@@ -506,6 +506,7 @@ async function runStyleGenerate(){
 // === Assistant shopping (panier budget-aware, choisi dans la vraie wishlist) ===
 let shoppingDeepConfirmed=false;
 let lastShoppingResult=null;
+let shoppingHistoryCache=[];
 function shoppingMaxCandidates(){return Math.min(100,state.articles.filter(a=>!state.trash.includes(a.uid)&&!a.purchased).length)}
 function renderShoppingModal(){
   const max=shoppingMaxCandidates();
@@ -529,16 +530,70 @@ function renderShoppingModal(){
     <div id="shoppingEstimateBox" class="full" style="margin:4px 0 10px;font-size:12px;color:var(--muted)"></div>
     <div class="full"><button class="btn primary" id="shoppingGenerateBtn" onclick="runShoppingGenerate()">${ICON_SPARKLE} Générer un panier</button></div>
     <div class="full" id="shoppingResults" style="margin-top:18px"></div>
+    <div class="full" id="shoppingHistoryBox"></div>
   `;
   onShoppingSliderChange();
+  loadShoppingHistory();
+}
+async function loadShoppingHistory(){
+  try{
+    shoppingHistoryCache=await DB.listShoppingGenerations(30);
+    renderShoppingHistoryCarousel();
+  }catch(e){console.error(e)}
+}
+let shoppingHistorySeq=0;
+function renderShoppingHistoryCarousel(){
+  const box=document.getElementById('shoppingHistoryBox');if(!box)return;
+  if(!shoppingHistoryCache.length){box.innerHTML='';return}
+  const id=`shoppingHistory_${++shoppingHistorySeq}`;
+  box.innerHTML=`<div style="margin-top:26px;border-top:1px solid var(--line);padding-top:16px">
+    <span class="eyebrow">Paniers générés précédemment (${shoppingHistoryCache.length})</span>
+    <div class="history-carousel" id="${id}">
+      <button class="media-carousel-arrow prev" type="button" aria-label="Paniers plus récents" onclick="moveHistoryCarousel('${id}',-1)">‹</button>
+      <div class="history-carousel-track" id="${id}_track">${shoppingHistoryCache.map(shoppingHistoryCard).join('')}</div>
+      <button class="media-carousel-arrow next" type="button" aria-label="Paniers plus anciens" onclick="moveHistoryCarousel('${id}',1)">›</button>
+    </div>
+  </div>`;
+}
+function shoppingHistoryCard(h){
+  const picks=h.result?.picks||[];
+  const imgs=picks.map(p=>mainImage(byId(p.uid))).filter(Boolean).slice(0,3);
+  const totals=Object.entries(h.result?.totalsByCurrency||{}).map(([c,v])=>`${v.toFixed(0)} ${c}`).join(' + ')||'—';
+  const date=new Date(h.created_at).toLocaleDateString('fr-CA',{day:'numeric',month:'short'});
+  return `<button class="history-card" onclick="openShoppingHistoryDetail(${h.id})">
+    <div class="history-card-imgs">${imgs.length?imgs.map(i=>`<img src="${i}" alt="">`).join(''):'<div></div>'}</div>
+    <div class="history-card-copy"><b>${esc(totals)}</b><span>${esc(date)} · ${picks.length} pièce${picks.length>1?'s':''}</span>${h.query?`<p>${esc(h.query.slice(0,64))}</p>`:''}</div>
+  </button>`;
+}
+function moveHistoryCarousel(id,delta){
+  const track=document.getElementById(`${id}_track`);if(!track)return;
+  track.scrollBy({left:delta*(track.clientWidth-40),behavior:'smooth'});
+}
+function openShoppingHistoryDetail(id){
+  const h=shoppingHistoryCache.find(x=>x.id===id);if(!h)return;
+  lastShoppingResult=h.result;
+  const date=new Date(h.created_at).toLocaleDateString('fr-CA',{day:'numeric',month:'long',year:'numeric'});
+  document.getElementById('galleryTitle').textContent=`Panier du ${date}`;
+  document.getElementById('galleryBody').innerHTML=`${h.query?`<p style="color:var(--muted);font-size:12px;margin-top:0">${esc(h.query)}</p>`:''}${shoppingResultHTML(h.result)}<div class="full" style="margin-top:14px"><button class="btn danger" onclick="deleteShoppingHistoryEntry(${h.id})">Supprimer cet historique</button></div>`;
+  openModal('galleryModal');
+}
+async function deleteShoppingHistoryEntry(id){
+  if(!confirm('Supprimer ce panier de l\'historique ?'))return;
+  try{
+    await DB.deleteShoppingGeneration(id);
+    shoppingHistoryCache=shoppingHistoryCache.filter(h=>h.id!==id);
+    closeModal('galleryModal');
+    renderShoppingHistoryCarousel();
+    toast('Historique supprimé');
+  }catch(e){toast(e.message||'Erreur de suppression')}
 }
 function estimateShoppingLocal(candidateCount){
   const candidateTokens=candidateCount*45,wardrobeSummaryTokens=500,wardrobeAndOutfitsTokens=400,styleTokens=250,promptOverhead=300;
   const inputTokens=candidateTokens+wardrobeSummaryTokens+wardrobeAndOutfitsTokens+styleTokens+promptOverhead,outputTokens=1300;
-  const costUSD=(inputTokens/1e6)*0.15+(outputTokens/1e6)*0.60;
+  const costUSD=(inputTokens/1e6)*0.25+(outputTokens/1e6)*2.00;
   return {inputTokens,outputTokens,costUSD};
 }
-const SHOPPING_CONFIRM_THRESHOLD_USD=0.003;
+const SHOPPING_CONFIRM_THRESHOLD_USD=0.01;
 function onShoppingSliderChange(){
   const slider=document.getElementById('shopItemSlider'),label=document.getElementById('shopItemCountLabel');
   if(label&&slider)label.textContent=slider.value;
@@ -578,19 +633,26 @@ async function runShoppingGenerate(){
     lastShoppingResult=result;
     renderShoppingResults(result);
     toast('Panier proposé — relis avant d\'ajouter au panier réel');
+    try{
+      const saved=await DB.saveShoppingGeneration({query,budget:budget||null,currency,result});
+      shoppingHistoryCache.unshift(saved);
+      renderShoppingHistoryCarousel();
+    }catch(e){console.error('Sauvegarde historique échouée:',e)}
   }catch(e){toast(e.message||'Erreur IA')}
   finally{btn.disabled=false;shoppingDeepConfirmed=false;box.innerHTML='';onShoppingSliderChange()}
 }
-function renderShoppingResults(result){
+function shoppingResultHTML(result){
   const picks=(result.picks||[]).map(p=>({...p,item:byId(p.uid)})).filter(p=>p.item);
   const totals=Object.entries(result.totalsByCurrency||{}).map(([c,v])=>`${v.toFixed(2)} ${c}`).join(' + ')||'—';
-  document.getElementById('shoppingResults').innerHTML=`
-    <div style="border-top:1px solid var(--line);padding-top:14px">
+  return `<div style="border-top:1px solid var(--line);padding-top:14px">
       <p style="color:var(--muted);font-size:13px">${esc(result.note||'')}</p>
       <div class="statsline"><span class="pill">Total : ${esc(totals)}</span><span class="pill">Budget visé : ${esc(String(result.budget?.amount||''))} ${esc(result.budget?.currency||'')}</span></div>
       <div class="listview" style="margin-top:10px">${picks.map(p=>`<div class="listitem"><img src="${mainImage(p.item)}" alt=""><div><h3>${esc(p.item.name)}</h3><p>${esc(p.item.brand||'')} · ${esc(p.item.price||'')}</p><p style="color:var(--muted);font-size:11px">${esc(p.reason||'')}</p>${p.outfit_note?`<p style="font-size:11px;margin-top:4px"><b>${ICON_SPARKLE} Avec ton vestiaire :</b> ${esc(p.outfit_note)}</p>`:''}</div></div>`).join('')||'<div class="empty">Aucune suggestion.</div>'}</div>
       ${picks.length?`<div class="full" style="margin-top:12px"><button class="btn primary" onclick="addShoppingPicksToCart()">Ajouter ces ${picks.length} pièces au panier</button></div>`:''}
     </div>`;
+}
+function renderShoppingResults(result){
+  document.getElementById('shoppingResults').innerHTML=shoppingResultHTML(result);
 }
 function addShoppingPicksToCart(){
   if(!lastShoppingResult)return;
