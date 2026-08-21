@@ -5,7 +5,7 @@
 const ICON_SPARKLE='<svg class="icon-red" viewBox="0 0 24 24" width="15" height="15" fill="currentColor" style="vertical-align:-2px"><path d="M12 2l1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8L12 2z"/></svg>';
 const ICON_CART='<svg class="icon-red" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px"><circle cx="9" cy="20" r="1"/><circle cx="18" cy="20" r="1"/><path d="M2 3h2l2.6 12.4a1.8 1.8 0 0 0 1.8 1.6h8a1.8 1.8 0 0 0 1.8-1.4L21 7H5.5"/></svg>';
 const COLOR_SWATCH={'Noir':'#111','Blanc / écru':'#f2ede2','Brun / beige':'#8a6a4c','Bleu':'#3a5a8c','Rouge':'#c8283d','Orange':'#d97a34','Rose / violet':'#b06aa0','Vert / olive':'#6f7d4a','Jaune':'#d9b23c','Gris / métallisé':'#9a9a9a','Motifs / multicolore':'linear-gradient(135deg,#c8283d,#3a5a8c,#d9b23c)','Autre':'#6f6a63'};
-const NAV=[['home','Accueil'],['catalog','Catalogue'],['wardrobe','Vestiaire'],['collections','Collections'],['purchases','Achats'],['cart','Panier'],['shopping','Personal Shopper'],['trash','Corbeille']];
+const NAV=[['home','Accueil'],{group:'wishlist',label:'Wishlist',pages:[['catalog','Catalogue'],['shopping','Personal Shopper'],['purchases','Achats']],related:['cart','trash']},['wardrobe','Vestiaire'],['collections','Collections']];
 let route={page:'home',filter:{}};
 let collectionTarget=null;
 let editTarget=null;
@@ -66,7 +66,22 @@ function entityById(id){return byId(id)||outfitById(id)}
 function esc(s=''){return String(s??'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]))}
 function safeUrl(u=''){try{const x=new URL(u);return ['http:','https:'].includes(x.protocol)?u:'#'}catch(e){return '#'}}
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(window.__tt);window.__tt=setTimeout(()=>t.classList.remove('show'),1800)}
-function navRender(){document.getElementById('nav').innerHTML=NAV.map(([p,l])=>`<button class="${route.page===p?'active':''}" onclick="go('${p}')">${l}</button>`).join('');const cc=state.cart.length,tc=state.trash.length;setCount('cartCount',cc);setCount('trashCount',tc)}
+function navRender(){
+  let activeGroup=null;
+  document.getElementById('nav').innerHTML=NAV.map(e=>{
+    if(e.group){
+      const active=e.pages.some(([p])=>p===route.page)||e.related.includes(route.page);
+      if(active)activeGroup=e;
+      return `<button class="${active?'active':''}" onclick="go('${e.pages[0][0]}')">${e.label}</button>`;
+    }
+    const [p,l]=e;
+    return `<button class="${route.page===p?'active':''}" onclick="go('${p}')">${l}</button>`;
+  }).join('');
+  const subnavEl=document.getElementById('subnav');
+  subnavEl.classList.toggle('hide',!activeGroup);
+  subnavEl.innerHTML=activeGroup?activeGroup.pages.map(([p,l])=>`<button class="${route.page===p?'active':''}" onclick="go('${p}')">${l}</button>`).join(''):'';
+  const cc=state.cart.length,tc=state.trash.length;setCount('cartCount',cc);setCount('trashCount',tc)
+}
 function setCount(id,n){const el=document.getElementById(id);el.textContent=n;el.classList.toggle('hide',!n)}
 function go(page,filter={}){route={page,filter};window.scrollTo({top:0,behavior:'smooth'});const v=document.getElementById('view');v.classList.add('view-out');setTimeout(()=>{render();v.classList.remove('view-out')},110)}
 function render(){navRender();const v=document.getElementById('view'); if(route.page==='home')v.innerHTML=homeView();else if(route.page==='catalog')v.innerHTML=catalogView();else if(route.page==='wardrobe')v.innerHTML=wardrobeView();else if(route.page==='collections')v.innerHTML=collectionsView();else if(route.page==='purchases')v.innerHTML=purchasesView();else if(route.page==='cart')v.innerHTML=cartView();else if(route.page==='trash')v.innerHTML=trashView();else if(route.page==='style'){v.innerHTML=`<div class="catalog-head"><div><h1>Mon Style</h1></div></div><div class="form" id="styleModalBody"><p style="color:var(--muted)">Chargement…</p></div>`;loadStyleView()}else if(route.page==='shopping'){v.innerHTML=`<div class="catalog-head"><div><h1>Personal Shopper</h1></div></div><div class="form" id="shoppingModalBody"></div>`;renderShoppingModal()}wireAfterRender()}
