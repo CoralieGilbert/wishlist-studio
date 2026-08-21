@@ -648,10 +648,22 @@ async function runStyleGenerate(){
 let shoppingDeepConfirmed=false;
 let lastShoppingResult=null;
 let shoppingHistoryCache=[];
-function shoppingMaxCandidates(){return Math.min(100,state.articles.filter(a=>!state.trash.includes(a.uid)&&!a.purchased).length)}
+function shoppingMaxCandidates(){return Math.min(150,state.articles.filter(a=>!state.trash.includes(a.uid)&&!a.purchased).length)}
+function wishlistCountSince(months){
+  const cutoff=new Date();cutoff.setMonth(cutoff.getMonth()-months);
+  const cutoffStr=cutoff.toISOString().slice(0,10);
+  return state.articles.filter(a=>!state.trash.includes(a.uid)&&!a.purchased&&a.date_added&&a.date_added>=cutoffStr).length;
+}
+function setShoppingItemPreset(months){
+  const max=shoppingMaxCandidates();
+  const n=months?Math.min(max,wishlistCountSince(months)):max;
+  const slider=document.getElementById('shopItemSlider');
+  if(slider)slider.value=Math.max(1,n||1);
+  onShoppingSliderChange();
+}
 function renderShoppingModal(){
   const max=shoppingMaxCandidates();
-  const def=Math.min(40,max);
+  const def=max;
   document.getElementById('shoppingModalBody').innerHTML=`
     <p style="color:var(--muted);font-size:12px;margin:0 0 14px">L'IA choisit uniquement parmi tes vrais articles de wishlist (jamais de produit inventé), en tenant compte de ton style, de ton vestiaire, et de ce que tu cherches ci-dessous.</p>
     <label class="full"><span>Ce que je recherche (type de vêtement, style, occasion... — libre)</span><textarea id="shopQuery" placeholder="Ex. une veste chaude et élégante pour l'hiver, plutôt sobre"></textarea></label>
@@ -667,6 +679,12 @@ function renderShoppingModal(){
     <div class="full" style="margin:14px 0 6px">
       <label style="display:block;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px">Pièces de wishlist à considérer : <b id="shopItemCountLabel">${def}</b> / ${max}</label>
       <input type="range" id="shopItemSlider" min="1" max="${max||1}" value="${def||1}" oninput="onShoppingSliderChange()" style="width:100%" ${max?'':'disabled'}>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
+        <button type="button" class="pillbtn" onclick="setShoppingItemPreset(1)">Ajoutées il y a -1 mois</button>
+        <button type="button" class="pillbtn" onclick="setShoppingItemPreset(3)">-3 mois</button>
+        <button type="button" class="pillbtn" onclick="setShoppingItemPreset(6)">-6 mois</button>
+        <button type="button" class="pillbtn" onclick="setShoppingItemPreset(0)">Toutes les pièces</button>
+      </div>
     </div>
     <div id="shoppingEstimateBox" class="full" style="margin:4px 0 10px;font-size:12px;color:var(--muted)"></div>
     <div class="full"><button class="btn primary" id="shoppingGenerateBtn" onclick="runShoppingGenerate()">${ICON_SPARKLE} Générer un panier</button></div>
