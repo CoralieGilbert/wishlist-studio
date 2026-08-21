@@ -419,7 +419,7 @@ function estimateStyleLocal({textChars,imageCount,useWishlistSummary,wishlistIte
   const summaryTokens=useWishlistSummary?500:0;
   const itemTokens=wishlistItemCount*45;
   const inputTokens=textTokens+imageTokens+summaryTokens+itemTokens+300;
-  const outputTokens=950;
+  const outputTokens=3000;
   const costUSD=(inputTokens/1e6)*0.25+(outputTokens/1e6)*2.00;
   return {inputTokens,outputTokens,costUSD};
 }
@@ -589,7 +589,7 @@ async function deleteShoppingHistoryEntry(id){
 }
 function estimateShoppingLocal(candidateCount){
   const candidateTokens=candidateCount*45,wardrobeSummaryTokens=500,wardrobeAndOutfitsTokens=400,styleTokens=250,promptOverhead=300;
-  const inputTokens=candidateTokens+wardrobeSummaryTokens+wardrobeAndOutfitsTokens+styleTokens+promptOverhead,outputTokens=1300;
+  const inputTokens=candidateTokens+wardrobeSummaryTokens+wardrobeAndOutfitsTokens+styleTokens+promptOverhead,outputTokens=2200;
   const costUSD=(inputTokens/1e6)*0.25+(outputTokens/1e6)*2.00;
   return {inputTokens,outputTokens,costUSD};
 }

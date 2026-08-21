@@ -43,7 +43,7 @@ export async function analyzeImage(dataUri, apiKey) {
         ] },
       ],
       response_format: { type: 'json_schema', json_schema: { name: 'article_fiche', strict: true, schema: SCHEMA } },
-      max_completion_tokens: 800,
+      max_completion_tokens: 1200,
     }),
   });
   if (!res.ok) {

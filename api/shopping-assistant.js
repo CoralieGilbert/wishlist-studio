@@ -81,7 +81,7 @@ ${budgetNum ? `- Privilégie fortement les pièces dont la devise est ${currency
         model: 'gpt-5-mini',
         messages: [{ role: 'user', content: prompt }],
         response_format: { type: 'json_schema', json_schema: { name: 'panier', strict: true, schema: SCHEMA } },
-        max_completion_tokens: 2400,
+        max_completion_tokens: 3200,
       }),
     });
     if (!openaiRes.ok) {

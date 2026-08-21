@@ -4,7 +4,7 @@
 const PRICE_IN_PER_M = 0.25;
 const PRICE_OUT_PER_M = 2.00;
 const TOKENS_PER_IMAGE = 850; // ordre de grandeur pour une image compressée en detail "auto"
-const OUTPUT_TOKENS_STYLE = 950;
+const OUTPUT_TOKENS_STYLE = 3000; // gpt-5-mini dépense une partie invisible en tokens de raisonnement
 
 const TOKENS_PER_WISHLIST_ITEM = 45; // ~une ligne "nom (marque) — catégorie, couleur, prix [tags]"
 
@@ -24,7 +24,7 @@ export function estimateStyleGeneration({ textChars = 0, imageCount = 0, useWish
   return { inputTokens, outputTokens, costUSD: priceUSD(inputTokens, outputTokens) };
 }
 
-const OUTPUT_TOKENS_SHOPPING = 1300;
+const OUTPUT_TOKENS_SHOPPING = 2200;
 export function estimateShoppingAssistant({ candidateCount = 0 }) {
   const candidateTokens = candidateCount * TOKENS_PER_WISHLIST_ITEM;
   const wardrobeSummaryTokens = 500;
@@ -36,7 +36,7 @@ export function estimateShoppingAssistant({ candidateCount = 0 }) {
   return { inputTokens, outputTokens, costUSD: priceUSD(inputTokens, outputTokens) };
 }
 
-const OUTPUT_TOKENS_OUTFIT = 400;
+const OUTPUT_TOKENS_OUTFIT = 900;
 export function estimateOutfitAdvice({ outfitItemCount = 0, wardrobeItemCount = 0, wishlistItemCount = 0 }) {
   const outfitTokens = outfitItemCount * TOKENS_PER_WISHLIST_ITEM;
   const wardrobeTokens = wardrobeItemCount * TOKENS_PER_WISHLIST_ITEM;
