@@ -67,7 +67,7 @@ function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t
 function navRender(){document.getElementById('nav').innerHTML=NAV.map(([p,l])=>`<button class="${route.page===p?'active':''}" onclick="go('${p}')">${l}</button>`).join('');const cc=state.cart.length,tc=state.trash.length;setCount('cartCount',cc);setCount('trashCount',tc)}
 function setCount(id,n){const el=document.getElementById(id);el.textContent=n;el.classList.toggle('hide',!n)}
 function go(page,filter={}){route={page,filter};window.scrollTo({top:0,behavior:'smooth'});const v=document.getElementById('view');v.classList.add('view-out');setTimeout(()=>{render();v.classList.remove('view-out')},110)}
-function render(){navRender();const v=document.getElementById('view'); if(route.page==='home')v.innerHTML=homeView();else if(route.page==='catalog')v.innerHTML=catalogView();else if(route.page==='wardrobe')v.innerHTML=wardrobeView();else if(route.page==='collections')v.innerHTML=collectionsView();else if(route.page==='purchases')v.innerHTML=purchasesView();else if(route.page==='cart')v.innerHTML=cartView();else if(route.page==='trash')v.innerHTML=trashView();else if(route.page==='style'){v.innerHTML=`<div class="catalog-head"><div><h1>Mon Style</h1></div></div><div class="form" id="styleModalBody"><p style="color:var(--muted)">Chargement…</p></div>`;loadStyleView()}wireAfterRender()}
+function render(){navRender();const v=document.getElementById('view'); if(route.page==='home')v.innerHTML=homeView();else if(route.page==='catalog')v.innerHTML=catalogView();else if(route.page==='wardrobe')v.innerHTML=wardrobeView();else if(route.page==='collections')v.innerHTML=collectionsView();else if(route.page==='purchases')v.innerHTML=purchasesView();else if(route.page==='cart')v.innerHTML=cartView();else if(route.page==='trash')v.innerHTML=trashView();else if(route.page==='style'){v.innerHTML=`<div class="catalog-head"><div><h1>Mon Style</h1></div></div><div class="form" id="styleModalBody"><p style="color:var(--muted)">Chargement…</p></div>`;loadStyleView()}else if(route.page==='shopping'){v.innerHTML=`<div class="catalog-head"><div><h1>Personal Shopper</h1></div></div><div class="form" id="shoppingModalBody"></div>`;renderShoppingModal()}wireAfterRender()}
 function countBy(arr,key){return arr.reduce((a,x)=>{const k=x[key]||'Autre';a[k]=(a[k]||0)+1;return a},{})}
 function uniq(arr){return [...new Set(arr.filter(Boolean))].sort((a,b)=>String(a).localeCompare(String(b),'fr'))}
 function priceTotals(items){const t={};items.forEach(x=>{if(Number.isFinite(Number(x.price_num))){const c=x.currency&&x.currency!=='Non précisée'?x.currency:'?';t[c]=(t[c]||0)+Number(x.price_num)}});return t}
@@ -183,19 +183,21 @@ function openOutfitDetail(id){
  outfitAdviceTarget=o;
  const comps=(o.itemIds||[]).map(byId).filter(Boolean);
  document.getElementById('outfitDetailTitle').textContent=o.name||'Tenue';
- document.getElementById('outfitDetailBody').innerHTML=`${(o.photos||[]).length?`<div class="outfit-detail-photo"><span class="eyebrow">Photo${o.photos.length>1?'s':''} de la tenue</span>${mediaCarousel(o.photos,o.name||'Tenue')}</div>`:''}<div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px"><button class="btn" onclick="openCollectionPicker('${o.id}')">+ Collection</button><button class="btn" onclick="closeModal('outfitDetailModal');openOutfitEditor('${o.id}')">Modifier</button><button class="btn primary" id="outfitAdviceBtn" onclick="runOutfitAdvice()">✨ Comment améliorer cette tenue ?</button></div><div id="outfitAdviceBox" style="margin-bottom:14px;font-size:13px;color:var(--muted)"></div>${comps.length?`<span class="eyebrow">Pièces de la tenue</span>${comps.map(x=>{const imgs=itemImages(x);return `<section class="outfit-component"><h3>${esc(x.name)}</h3><p>${esc(x.brand||'Sans marque / Vintage')} · ${esc(x.subcategory||x.category||'')}${imgs.length>1?` · ${imgs.length} photos`:''}</p>${mediaCarousel(imgs,x.name)}</section>`}).join('')}`:'<div class="empty">Cette tenue ne contient encore aucune pièce.</div>'}`;
+ document.getElementById('outfitDetailBody').innerHTML=`${(o.photos||[]).length?`<div class="outfit-detail-photo"><span class="eyebrow">Photo${o.photos.length>1?'s':''} de la tenue</span>${mediaCarousel(o.photos,o.name||'Tenue')}</div>`:''}<div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px"><button class="btn" onclick="openCollectionPicker('${o.id}')">+ Collection</button><button class="btn" onclick="closeModal('outfitDetailModal');openOutfitEditor('${o.id}')">Modifier</button><button class="circle" title="Conseils IA" onclick="toggleOutfitAdviceChoice()">✨</button></div><div id="outfitAdviceChoice" class="hide" style="margin-bottom:14px;font-size:13px"><span style="color:var(--muted)">Regarder dans :</span> <label class="checkline" style="display:inline-flex;margin:0 8px"><input type="radio" name="oaSource" value="wardrobe" checked> Mon vestiaire</label><label class="checkline" style="display:inline-flex;margin:0 8px"><input type="radio" name="oaSource" value="wishlist"> Ma wishlist</label><label class="checkline" style="display:inline-flex;margin:0 8px"><input type="radio" name="oaSource" value="both"> Les deux</label><button class="btn primary" id="outfitAdviceBtn" onclick="runOutfitAdvice()" style="margin-left:8px">Lancer</button></div><div id="outfitAdviceBox" style="margin-bottom:14px;font-size:13px;color:var(--muted)"></div>${comps.length?`<span class="eyebrow">Pièces de la tenue</span>${comps.map(x=>{const imgs=itemImages(x);return `<section class="outfit-component"><h3>${esc(x.name)}</h3><p>${esc(x.brand||'Sans marque / Vintage')} · ${esc(x.subcategory||x.category||'')}${imgs.length>1?` · ${imgs.length} photos`:''}</p>${mediaCarousel(imgs,x.name)}</section>`}).join('')}`:'<div class="empty">Cette tenue ne contient encore aucune pièce.</div>'}`;
  openModal('outfitDetailModal');initMediaCarousels(document.getElementById('outfitDetailBody'))
 }
+function toggleOutfitAdviceChoice(){document.getElementById('outfitAdviceChoice')?.classList.toggle('hide')}
 async function runOutfitAdvice(){
  const o=outfitAdviceTarget;if(!o)return;
  const comps=(o.itemIds||[]).map(byId).filter(Boolean);
+ const source=document.querySelector('input[name="oaSource"]:checked')?.value||'wardrobe';
  const btn=document.getElementById('outfitAdviceBtn'),box=document.getElementById('outfitAdviceBox');
  btn.disabled=true;btn.textContent='Analyse en cours…';
  try{
-  const advice=await DB.getOutfitAdvice({outfitName:o.name,outfitItems:comps.map(x=>({uid:x.uid,name:x.name,brand:x.brand,category:x.category||x.subcategory,color:x.color||x.color_family})),wardrobeItemLimit:10,wishlistItemLimit:10});
+  const advice=await DB.getOutfitAdvice({outfitName:o.name,outfitItems:comps.map(x=>({uid:x.uid,name:x.name,brand:x.brand,category:x.category||x.subcategory,color:x.color||x.color_family})),wardrobeItemLimit:source!=='wishlist'?10:0,wishlistItemLimit:source!=='wardrobe'?10:0});
   box.innerHTML=esc(advice.advice).replace(/\n/g,'<br>');
  }catch(e){box.textContent=e.message||'Erreur IA'}
- finally{btn.disabled=false;btn.textContent='✨ Comment améliorer cette tenue ?'}
+ finally{btn.disabled=false;btn.textContent='Lancer'}
 }
 function openItemPhotos(uid){
  const x=byId(uid);if(!x)return;
@@ -209,7 +211,7 @@ function openItemOutfits(uid){const x=byId(uid);if(!x)return;const linked=outfit
 function collectionsView(){return `<div class="catalog-head"><div><h1>Collections</h1></div><div class="catalog-tools"><button class="btn primary" onclick="openNewCollection()">+ Nouvelle collection</button></div></div><div class="collection-row">${displayCollections().map((c,i)=>{const card=collectionCard(c,i);if(c.virtual)return `<div style="position:relative">${card}</div>`;return `<div style="position:relative"><div style="position:absolute;z-index:4;right:10px;top:10px;display:flex;gap:5px"><button class="circle" onclick="event.stopPropagation();editCollection('${c.id}')">✎</button><button class="circle" onclick="event.stopPropagation();deleteCollection('${c.id}')">×</button></div>${card}</div>`}).join('')}</div>`}
 function purchasesView(){const xs=liveItems().filter(isPurchased).sort((a,b)=>(b.purchase_date||b.date_added||'').localeCompare(a.purchase_date||a.date_added||''));const tot=purchaseTotals(xs);return `<div class="catalog-head"><div><h1>Mes achats</h1></div><div class="catalog-tools"><button class="btn" onclick="go('catalog',{status:'Acheté'})">Voir dans le catalogue</button><button class="btn primary" onclick="openQuickAdd()">+ Ajouter</button></div></div><div class="purchase-summary"><div class="purchase-stat"><span>Articles achetés</span><b>${xs.length}</b></div>${Object.entries(tot).map(([c,v])=>`<div class="purchase-stat"><span>Dépensé · ${esc(c)}</span><b>${esc(formatMoney(v,c))}</b></div>`).join('')}</div>${xs.length?`<div class="listview">${xs.map(purchaseListItem).join('')}</div>`:'<div class="empty">Aucun achat enregistré pour le moment. Utilise l’icône ✓ sur une pièce, ou sélectionne plusieurs articles depuis le panier.</div>'}`}
 function purchaseListItem(x){const paid=paidValue(x);const pn=pieceNumber(x);const paidCur=x.paid_currency||x.currency;return `<div class="listitem"><img src="${mainImage(x)}" alt=""><div><h3>${esc(x.name)}</h3><p>${esc(x.brand)} · ${pn!==null?'N° '+pn+' · ':''}${paid!==null?'payé '+esc(formatMoney(paid,paidCur)):'prix payé à renseigner'}</p><div class="purchase-list-meta">${x.purchase_date?'Acheté le '+esc(x.purchase_date):'Date d’achat non renseignée'}${x.price_num!==null&&x.price_num!==undefined&&paid!==null&&Number(x.price_num)!==Number(paid)?` · prix wishlist ${esc(formatMoney(x.price_num,x.currency))}`:''}</div></div><div class="list-actions"><button class="btn" onclick="openPurchaseModal(['${x.uid}'])">Modifier l’achat</button>${x.url?`<a class="btn" href="${safeUrl(x.url)}" target="_blank" rel="noopener">Article ↗</a>`:''}<button class="btn" onclick="togglePurchased('${x.uid}',false)">Annuler « acheté »</button></div></div>`}
-function cartView(){const xs=state.cart.map(byId).filter(x=>x&&!state.trash.includes(x.uid)),tot=priceTotals(xs);return `<div class="catalog-head"><div><h1>Panier</h1></div><div class="catalog-tools"><button class="btn primary" onclick="openShoppingModal()">✨ Assistant shopping</button><button class="btn" onclick="state.cart=[];persist();render()">Vider le panier</button></div></div><div class="totals">${Object.entries(tot).map(([c,v])=>`<div class="totalchip"><span>Total ${esc(c)}</span><b>${v.toFixed(2)}</b></div>`).join('')||'<span class="pill">Aucun prix additionnable</span>'}<div class="totalchip"><span>Articles</span><b>${xs.length}</b></div></div>${xs.length?`<div class="cart-batchbar"><label><input id="selectAllCart" type="checkbox" onchange="toggleAllCartSelections(this.checked)"> Tout sélectionner</label><span class="cart-selected-count" id="cartSelectedCount">0 sélectionné</span><button class="btn primary" onclick="openBatchPurchaseFromCart()">✓ Marquer comme acheté</button></div><div class="listview">${xs.map(x=>listItem(x,'cart')).join('')}</div>`:'<div class="empty">Ton panier est vide.</div>'}`}
+function cartView(){const xs=state.cart.map(byId).filter(x=>x&&!state.trash.includes(x.uid)),tot=priceTotals(xs);return `<div class="catalog-head"><div><h1>Panier</h1></div><div class="catalog-tools"><button class="btn primary" onclick="go('shopping')">✨ Personal Shopper</button><button class="btn" onclick="state.cart=[];persist();render()">Vider le panier</button></div></div><div class="totals">${Object.entries(tot).map(([c,v])=>`<div class="totalchip"><span>Total ${esc(c)}</span><b>${v.toFixed(2)}</b></div>`).join('')||'<span class="pill">Aucun prix additionnable</span>'}<div class="totalchip"><span>Articles</span><b>${xs.length}</b></div></div>${xs.length?`<div class="cart-batchbar"><label><input id="selectAllCart" type="checkbox" onchange="toggleAllCartSelections(this.checked)"> Tout sélectionner</label><span class="cart-selected-count" id="cartSelectedCount">0 sélectionné</span><button class="btn primary" onclick="openBatchPurchaseFromCart()">✓ Marquer comme acheté</button></div><div class="listview">${xs.map(x=>listItem(x,'cart')).join('')}</div>`:'<div class="empty">Ton panier est vide.</div>'}`}
 function trashView(){const xs=state.trash.map(byId).filter(Boolean);return `<div class="catalog-head"><div><h1>Corbeille</h1></div><div class="catalog-tools"><button class="btn danger" onclick="emptyTrash()">Vider définitivement</button></div></div>${xs.length?`<div class="listview">${xs.map(x=>listItem(x,'trash')).join('')}</div>`:'<div class="empty">La corbeille est vide.</div>'}`}
 function listItem(x,mode){if(mode==='cart')return `<div class="listitem cart-listitem"><label class="cart-select" title="Sélectionner"><input type="checkbox" data-cart-select="${x.uid}" onchange="updateCartSelectedCount()"></label><img src="${mainImage(x)}" alt=""><div><h3>${esc(x.name)}</h3><p>${esc(x.brand)} · ${esc(x.store)} · ${esc(x.price||'')}</p></div><div class="list-actions"><button class="btn" onclick="openItemEditor('${x.uid}')">Modifier</button><button class="btn" onclick="openPurchaseModal(['${x.uid}'])">✓ Acheté</button><button class="btn" onclick="toggleCart('${x.uid}')">Retirer du panier</button><button class="btn danger" onclick="trashItem('${x.uid}')">Corbeille</button></div></div>`;return `<div class="listitem"><img src="${mainImage(x)}" alt=""><div><h3>${esc(x.name)}</h3><p>${esc(x.brand)} · ${esc(x.store)} · ${esc(x.price||'')}</p></div><div class="list-actions"><button class="btn primary" onclick="restoreItem('${x.uid}')">Restaurer</button><button class="btn danger" onclick="deleteForever('${x.uid}')">Supprimer</button></div></div>`}
 function wireAfterRender(){
@@ -487,13 +489,13 @@ async function runStyleGenerate(){
 let shoppingDeepConfirmed=false;
 let lastShoppingResult=null;
 function shoppingMaxCandidates(){return Math.min(100,state.articles.filter(a=>!state.trash.includes(a.uid)&&!a.purchased).length)}
-function openShoppingModal(){openModal('shoppingModal');renderShoppingModal()}
 function renderShoppingModal(){
   const max=shoppingMaxCandidates();
   const def=Math.min(40,max);
   document.getElementById('shoppingModalBody').innerHTML=`
-    <p style="color:var(--muted);font-size:12px;margin:0 0 14px">L'IA choisit uniquement parmi tes vrais articles de wishlist (jamais de produit inventé), en tenant compte de ton budget et de ton style.</p>
-    <label><span>Budget</span><input id="shopBudget" type="number" min="1" step="1" placeholder="300" oninput="onShoppingSliderChange()"></label>
+    <p style="color:var(--muted);font-size:12px;margin:0 0 14px">L'IA choisit uniquement parmi tes vrais articles de wishlist (jamais de produit inventé), en tenant compte de ton style, de ton vestiaire, et de ce que tu cherches ci-dessous.</p>
+    <label class="full"><span>Ce que je recherche (type de vêtement, style, occasion... — libre)</span><textarea id="shopQuery" placeholder="Ex. une veste chaude et élégante pour l'hiver, plutôt sobre"></textarea></label>
+    <label><span>Budget (optionnel)</span><input id="shopBudget" type="number" min="1" step="1" placeholder="laisser vide = pas de limite" oninput="onShoppingSliderChange()"></label>
     <label><span>Devise</span><input id="shopCurrency" value="CAD" oninput="onShoppingSliderChange()"></label>
     <div class="full" style="margin:14px 0 6px">
       <label style="display:block;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px">Pièces de wishlist à considérer : <b id="shopItemCountLabel">${def}</b> / ${max}</label>
@@ -525,9 +527,10 @@ function onShoppingSliderChange(){
 async function runShoppingGenerate(){
   const budget=Number(document.getElementById('shopBudget')?.value||0);
   const currency=(document.getElementById('shopCurrency')?.value||'CAD').trim()||'CAD';
+  const query=(document.getElementById('shopQuery')?.value||'').trim();
   const itemLimit=Number(document.getElementById('shopItemSlider')?.value||0);
   const btn=document.getElementById('shoppingGenerateBtn'),box=document.getElementById('shoppingEstimateBox'),results=document.getElementById('shoppingResults');
-  if(!budget||budget<=0){toast('Indique un budget d\'abord');return}
+  if(!budget&&!query){toast('Indique un budget ou ce que tu recherches');return}
   const est=estimateShoppingLocal(itemLimit);
 
   if(est.costUSD>SHOPPING_CONFIRM_THRESHOLD_USD&&!shoppingDeepConfirmed){
@@ -544,7 +547,7 @@ async function runShoppingGenerate(){
 
   btn.disabled=true;btn.textContent='Génération en cours…';results.innerHTML='';
   try{
-    const result=await DB.runShoppingAssistant({budget,currency,itemLimit});
+    const result=await DB.runShoppingAssistant({budget,currency,itemLimit,query});
     lastShoppingResult=result;
     renderShoppingResults(result);
     toast('Panier proposé — relis avant d\'ajouter au panier réel');
@@ -567,7 +570,6 @@ function addShoppingPicksToCart(){
   (lastShoppingResult.picks||[]).forEach(p=>{if(!state.cart.includes(p.uid))state.cart.push(p.uid)});
   persist();
   toast('Ajouté au panier');
-  closeModal('shoppingModal');
   go('cart');
 }
 

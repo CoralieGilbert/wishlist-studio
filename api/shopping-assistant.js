@@ -31,9 +31,8 @@ export default async function handler(req, res) {
   const user = await getUserFromRequest(req);
   if (!user) { res.status(401).json({ error: 'Non connectée.' }); return; }
 
-  const { budget, currency = 'CAD', itemLimit = 40 } = req.body || {};
-  const budgetNum = Number(budget);
-  if (!budgetNum || budgetNum <= 0) { res.status(400).json({ error: 'Budget invalide.' }); return; }
+  const { budget, currency = 'CAD', itemLimit = 40, query = '' } = req.body || {};
+  const budgetNum = Number(budget) > 0 ? Number(budget) : null;
   const limit = Math.max(1, Math.min(MAX_CANDIDATES, Number(itemLimit) || 40));
 
   const { data: settings } = await supabaseAdmin.from('user_settings').select('openai_api_key,style_text').eq('user_id', user.id).single();
@@ -48,8 +47,9 @@ export default async function handler(req, res) {
 
   const candidateLines = candidates.map(c => `${c.uid} | ${c.name || 'Sans nom'} | ${c.brand || ''} | ${c.category || ''} | ${c.color || c.color_family || ''} | ${c.price_num ?? '?'} ${c.currency || ''} | ${(c.tags || []).join(', ')}`).join('\n');
 
-  const prompt = `Tu es une assistante personal shopper. Objectif : composer un panier d'achats qui respecte un budget de ${budgetNum} ${currency}, en piochant UNIQUEMENT dans la liste de candidats fournie ci-dessous (jamais d'article hors de cette liste).
+  const prompt = `Tu es une assistante personal shopper. Objectif : proposer les meilleures pièces à acheter, en piochant UNIQUEMENT dans la liste de candidats fournie ci-dessous (jamais d'article hors de cette liste).
 ${settings.style_text ? `Style personnel de la cliente :\n${settings.style_text}\n` : ''}
+${query ? `Ce qu'elle recherche précisément : ${query}\n` : ''}
 Contexte (vestiaire et goûts) :
 ${wardrobeSummary}
 
@@ -57,9 +57,8 @@ Candidats disponibles (format : uid | nom | marque | catégorie | couleur | prix
 ${candidateLines}
 
 Consignes :
-- Privilégie fortement les pièces dont la devise est ${currency} : ne compte JAMAIS ensemble des prix de devises différentes (ce serait faux). Une pièce dans une autre devise ne peut être choisie que si tu le signales explicitement comme "hors budget principal, devise différente".
-- Choisis une combinaison de pièces en ${currency} dont la somme ne dépasse pas ${budgetNum} ${currency}.
-- Privilégie les pièces qui comblent un vrai manque ou complètent des pièces déjà possédées, pas des doublons.
+${budgetNum ? `- Privilégie fortement les pièces dont la devise est ${currency} : ne compte JAMAIS ensemble des prix de devises différentes (ce serait faux). Une pièce dans une autre devise ne peut être choisie que si tu le signales explicitement comme "hors budget principal, devise différente".\n- Choisis une combinaison de pièces en ${currency} dont la somme ne dépasse pas ${budgetNum} ${currency}.\n` : '- Aucun budget strict fourni : propose une sélection raisonnable (pas besoin de tout dépenser).\n'}- Privilégie les pièces qui comblent un vrai manque ou complètent des pièces déjà possédées, pas des doublons.
+- Si une recherche précise est donnée, priorise les candidats qui y correspondent le mieux.
 - Pour chaque pièce choisie, donne une raison courte (une phrase).
 - "note" : un court résumé (2-3 phrases) de la logique du panier (ne donne pas de total chiffré, il sera calculé automatiquement).
 - N'invente aucune pièce : le champ "uid" doit correspondre exactement à un uid de la liste.`;
