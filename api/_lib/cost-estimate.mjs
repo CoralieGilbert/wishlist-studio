@@ -24,7 +24,7 @@ export function estimateStyleGeneration({ textChars = 0, imageCount = 0, useWish
   return { inputTokens, outputTokens, costUSD: priceUSD(inputTokens, outputTokens) };
 }
 
-const OUTPUT_TOKENS_SHOPPING = 2200;
+const OUTPUT_TOKENS_SHOPPING = 3000; // observé jusqu'à ~2800 sur des demandes complexes (plusieurs tenues) ; marge gardée sous le plafond de 6000
 export function estimateShoppingAssistant({ candidateCount = 0 }) {
   const candidateTokens = candidateCount * TOKENS_PER_WISHLIST_ITEM;
   const wardrobeSummaryTokens = 500;

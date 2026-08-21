@@ -749,7 +749,7 @@ async function deleteShoppingHistoryEntry(id){
 }
 function estimateShoppingLocal(candidateCount){
   const candidateTokens=candidateCount*45,wardrobeSummaryTokens=500,wardrobeAndOutfitsTokens=400,styleTokens=250,promptOverhead=300;
-  const inputTokens=candidateTokens+wardrobeSummaryTokens+wardrobeAndOutfitsTokens+styleTokens+promptOverhead,outputTokens=2200;
+  const inputTokens=candidateTokens+wardrobeSummaryTokens+wardrobeAndOutfitsTokens+styleTokens+promptOverhead,outputTokens=3000;
   const costUSD=(inputTokens/1e6)*0.25+(outputTokens/1e6)*2.00;
   return {inputTokens,outputTokens,costUSD};
 }
