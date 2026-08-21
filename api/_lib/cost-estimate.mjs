@@ -48,3 +48,16 @@ export function estimateOutfitAdvice({ outfitItemCount = 0, wardrobeItemCount = 
   const outputTokens = OUTPUT_TOKENS_OUTFIT;
   return { inputTokens, outputTokens, costUSD: priceUSD(inputTokens, outputTokens) };
 }
+
+const OUTPUT_TOKENS_CART = 3200; // avis + tenues possibles + additions/removals structurés, plus le raisonnement invisible
+export function estimateCartAdvice({ itemCount = 0, wardrobeItemCount = 0, wishlistItemCount = 0, queryChars = 0 }) {
+  const itemTokens = itemCount * TOKENS_PER_WISHLIST_ITEM;
+  const wardrobeTokens = wardrobeItemCount * TOKENS_PER_WISHLIST_ITEM;
+  const wishlistTokens = wishlistItemCount * TOKENS_PER_WISHLIST_ITEM;
+  const styleTokens = 250 + 6 * TOKENS_PER_IMAGE;
+  const queryTokens = Math.ceil(queryChars / 4);
+  const promptOverhead = 350;
+  const inputTokens = itemTokens + wardrobeTokens + wishlistTokens + styleTokens + queryTokens + promptOverhead;
+  const outputTokens = OUTPUT_TOKENS_CART;
+  return { inputTokens, outputTokens, costUSD: priceUSD(inputTokens, outputTokens) };
+}

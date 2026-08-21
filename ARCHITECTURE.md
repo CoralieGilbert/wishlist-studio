@@ -103,6 +103,11 @@ pour plusieurs comptes même si un seul est utilisé aujourd'hui.
   (picks/note/totaux) telle que reçue ; `query`/`budget`/`currency`
   dupliqués en colonnes pour un affichage rapide dans le carrousel
   d'historique sans avoir à reparser le jsonb.
+- **`outfit_advice_generations`** — historique des Conseils IA, scopé par
+  tenue (`outfit_uid`). `result` (jsonb) = `{advice, additions, removals}`.
+- **`cart_advice_generations`** — historique des Avis IA sur une sélection
+  libre du panier (pas scopé à un objet précis, juste `item_uids`).
+  `result` (jsonb) = `{advice, outfit_ideas, additions, removals}`.
 - **Storage** — bucket `wishlist-photos` ; upload/delete réservés aux
   utilisateurs authentifiés, lecture publique (URLs non répertoriées).
 
@@ -174,11 +179,22 @@ Menu principal (4 items) + sous-menu contextuel sous "Wishlist" :
   serveur — écriture directe via `db.js`/RLS) et réapparaît dans un
   carrousel d'historique sous le formulaire, avec vue détail (modal
   `galleryModal` réutilisée) et suppression individuelle.
-- **Conseils de tenue** (`outfit-advice`) : avis + 1-3 suggestions
-  concrètes sur une tenue, explicitement ancré sur le texte de style et
-  les images Pinterest de l'utilisatrice (pas de règles de mode
-  génériques) ; peut piocher dans le vestiaire ou la wishlist selon un
-  choix radio (curseurs pour limiter le nombre de candidats envoyés).
+- **Conseils de tenue** (`outfit-advice`, page dédiée `outfit` + modal
+  `outfitAdviceModal`) : avis + suggestions d'ajout (vestiaire/wishlist,
+  boutons d'action directe) et de retrait ancrées dans de vrais uid,
+  explicitement ancré sur le texte de style et les images Pinterest de
+  l'utilisatrice (pas de règles de mode génériques) ; formulaire avec
+  source (vestiaire/wishlist/les deux), occasion, budget. Historique
+  scopé à la tenue (`outfit_advice_generations`), carrousel + détail.
+- **Avis IA panier** (`cart-advice`) : à partir d'une sélection libre de
+  pièces du panier (cases à cocher déjà utilisées pour l'achat groupé),
+  avis de cohérence avec le style + jusqu'à 4 idées de tenues réalisables
+  (sélection + vestiaire, bouton "Créer cette tenue") + suggestions
+  d'ajout wishlist / de retrait du panier (doublon vestiaire ou hors
+  style). Mêmes garde-fous que les autres endpoints (uid réels
+  uniquement, revalidés côté serveur). Historique **global** (pas scopé à
+  une sélection précise, pattern Personal Shopper) dans
+  `cart_advice_generations`.
 
 Pattern commun à toutes : vérif du jeton Supabase → lecture de la clé
 OpenAI perso → construction d'un contexte **minimal** (résumés comptés,

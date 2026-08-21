@@ -362,6 +362,144 @@ async function runOutfitAdviceGenerate(){
  }catch(e){toast(e.message||'Erreur IA')}
  finally{outfitAdviceDeepConfirmed=false;btn.disabled=false;btn.textContent=`${ICON_SPARKLE} Lancer une nouvelle analyse`}
 }
+
+// === Avis IA (sélection libre du panier) : avis + tenues possibles + ajouts/retraits, historique global
+let cartAdviceSelection=[];
+let cartAdviceHistoryCache=[];
+let cartAdviceCurrentIdeas=[];
+let cartAdviceDeepConfirmed=false;
+const CART_ADVICE_CONFIRM_THRESHOLD_USD=0.01;
+const CART_ADVICE_WARDROBE_LIMIT=25;
+const CART_ADVICE_WISHLIST_LIMIT=15;
+
+function openCartAdvice(){
+ const ids=[...document.querySelectorAll('[data-cart-select]:checked')].map(x=>x.dataset.cartSelect);
+ if(!ids.length){toast('Sélectionne au moins un article du panier');return}
+ cartAdviceSelection=ids;
+ document.getElementById('cartAdviceModalTitle').textContent=`Avis IA · ${ids.length} pièce${ids.length>1?'s':''} sélectionnée${ids.length>1?'s':''}`;
+ openModal('cartAdviceModal');
+ renderCartAdviceModal();
+ loadCartAdviceHistory();
+}
+async function loadCartAdviceHistory(){
+ try{ cartAdviceHistoryCache=await DB.listCartAdviceGenerations(20); renderCartAdviceHistoryCarousel(); }
+ catch(e){ console.error(e); }
+}
+function renderCartAdviceModal(){
+ const items=cartAdviceSelection.map(byId).filter(Boolean);
+ document.getElementById('cartAdviceModalBody').innerHTML=`
+  <div class="full" style="margin-bottom:14px"><span class="eyebrow">Pièces sélectionnées (${items.length})</span><div class="listview" style="margin-top:8px">${items.map(x=>`<div class="listitem"><img src="${mainImage(x)}" alt=""><div><h3>${esc(x.name)}</h3><p>${esc(x.brand)} · ${esc(x.price||'')}</p></div></div>`).join('')}</div></div>
+  <label class="full"><span>Précisions (facultatif)</span><textarea id="caQuery" placeholder="Ex. je veux surtout savoir si ça fait doublon avec mon vestiaire…" oninput="onCartAdviceInputChange()"></textarea></label>
+  <div id="cartAdviceEstimateBox" class="full" style="margin:8px 0 10px;font-size:12px;color:var(--muted)"></div>
+  <div class="full"><button class="btn primary" id="cartAdviceBtn" onclick="runCartAdviceGenerate()">${ICON_SPARKLE} Demander un avis</button></div>
+  <div class="full" id="cartAdviceResult" style="margin-top:18px"></div>
+  <div class="full" id="cartAdviceHistoryBox"></div>
+ `;
+ onCartAdviceInputChange();
+}
+function outfitSuggestionCardWishlist(pick){return outfitSuggestionCard(pick,'add-wishlist')}
+function cartRemovalCard(pick){
+ const x=byId(pick.uid);if(!x)return '';
+ return `<div class="listitem"><img src="${mainImage(x)}" alt=""><div><h3>${esc(x.name)}</h3><p style="color:var(--muted);font-size:11px">${esc(pick.reason||'')}</p></div><div class="list-actions"><button class="btn danger" onclick="toggleCart('${pick.uid}')">Retirer du panier</button></div></div>`;
+}
+function cartAdviceOutfitIdeaCard(idea,i){
+ const items=(idea.uids||[]).map(byId).filter(Boolean);
+ if(!items.length)return '';
+ return `<div class="listitem" style="align-items:flex-start"><img src="${mainImage(items[0])}" alt=""><div><h3>${esc(idea.title||'Idée de tenue')}</h3><p style="color:var(--muted);font-size:12px">${esc(idea.note||'')}</p><p style="font-size:11px;color:var(--muted)">${items.map(x=>esc(x.name)).join(' · ')}</p></div><div class="list-actions"><button class="btn" onclick="createOutfitFromIdea(${i})">Créer cette tenue</button></div></div>`;
+}
+function createOutfitFromIdea(i){
+ const idea=cartAdviceCurrentIdeas[i];if(!idea)return;
+ const valid=(idea.uids||[]).filter(u=>byId(u));
+ if(valid.length<2){toast('Pas assez de pièces valides pour créer une tenue');return}
+ const uid='outfit-'+Date.now().toString(36);
+ state.outfits.unshift({uid,id:uid,name:idea.title||'Tenue suggérée',date_added:new Date().toISOString().slice(0,10),tags:[],note:idea.note||'',itemIds:valid,photos:[]});
+ persist();
+ toast('Tenue créée — retrouve-la dans Vestiaire');
+}
+function cartAdviceResultHTML(result){
+ const ideas=(result.outfit_ideas||[]).filter(o=>(o.uids||[]).some(u=>byId(u)));
+ cartAdviceCurrentIdeas=ideas;
+ const additions=(result.additions||[]).filter(a=>byId(a.uid));
+ const removals=(result.removals||[]).filter(r=>byId(r.uid));
+ return `<p style="color:var(--muted);font-size:13px;white-space:pre-line">${esc(result.advice||'')}</p>${ideas.length?`<div style="margin-top:12px"><span class="eyebrow">Tenues possibles</span><div class="listview" style="margin-top:8px">${ideas.map((idea,i)=>cartAdviceOutfitIdeaCard(idea,i)).join('')}</div></div>`:''}${additions.length?`<div style="margin-top:12px"><span class="eyebrow">Suggestions d'ajout</span><div class="listview" style="margin-top:8px">${additions.map(outfitSuggestionCardWishlist).join('')}</div></div>`:''}${removals.length?`<div style="margin-top:12px"><span class="eyebrow">Suggestions de retrait du panier</span><div class="listview" style="margin-top:8px">${removals.map(cartRemovalCard).join('')}</div></div>`:''}`;
+}
+let cartAdviceHistorySeq=0;
+function renderCartAdviceHistoryCarousel(){
+ const box=document.getElementById('cartAdviceHistoryBox');if(!box)return;
+ if(!cartAdviceHistoryCache.length){box.innerHTML='';return}
+ const id=`cartAdviceHistory_${++cartAdviceHistorySeq}`;
+ box.innerHTML=`<div style="margin-top:26px;border-top:1px solid var(--line);padding-top:16px"><span class="eyebrow">Avis précédents (${cartAdviceHistoryCache.length})</span><div class="history-carousel" id="${id}"><button class="media-carousel-arrow prev" type="button" aria-label="Avis plus récents" onclick="moveHistoryCarousel('${id}',-1)">‹</button><div class="history-carousel-track" id="${id}_track">${cartAdviceHistoryCache.map(cartAdviceHistoryCard).join('')}</div><button class="media-carousel-arrow next" type="button" aria-label="Avis plus anciens" onclick="moveHistoryCarousel('${id}',1)">›</button></div></div>`;
+}
+function cartAdviceHistoryCard(h){
+ const n=h.item_uids?.length||0;
+ const img=(h.item_uids||[]).map(u=>mainImage(byId(u))).filter(Boolean)[0]||'';
+ const date=new Date(h.created_at).toLocaleDateString('fr-CA',{day:'numeric',month:'short'});
+ const title=(h.query||`Avis du ${date}`).slice(0,60);
+ return `<button class="history-card" onclick="openCartAdviceHistoryDetail(${h.id})"><div class="history-card-imgs">${img?`<img src="${img}" alt="">`:''}</div><div class="history-card-copy"><b>${esc(title)}</b><span>${esc(date)} · ${n} pièce${n>1?'s':''}</span></div></button>`;
+}
+function openCartAdviceHistoryDetail(id){
+ const h=cartAdviceHistoryCache.find(x=>x.id===id);if(!h)return;
+ const date=new Date(h.created_at).toLocaleDateString('fr-CA',{day:'numeric',month:'long',year:'numeric'});
+ document.getElementById('galleryTitle').textContent=`Avis du ${date}`;
+ document.getElementById('galleryBody').innerHTML=`${h.query?`<p style="color:var(--muted);font-size:12px;margin-top:0">${esc(h.query)}</p>`:''}${cartAdviceResultHTML(h.result)}<div class="full" style="margin-top:14px"><button class="btn danger" onclick="deleteCartAdviceHistoryEntry(${h.id})">Supprimer cet historique</button></div>`;
+ openModal('galleryModal');
+}
+async function deleteCartAdviceHistoryEntry(id){
+ if(!confirm('Supprimer cet avis de l’historique ?'))return;
+ try{
+  await DB.deleteCartAdviceGeneration(id);
+  cartAdviceHistoryCache=cartAdviceHistoryCache.filter(h=>h.id!==id);
+  closeModal('galleryModal');
+  renderCartAdviceHistoryCarousel();
+  toast('Historique supprimé');
+ }catch(e){toast(e.message||'Erreur de suppression')}
+}
+function estimateCartAdviceLocal(){
+ const itemCount=cartAdviceSelection.length;
+ const queryChars=(val('caQuery')||'').length;
+ const itemTokens=itemCount*45,wardrobeTokens=CART_ADVICE_WARDROBE_LIMIT*45,wishlistTokens=CART_ADVICE_WISHLIST_LIMIT*45,styleTokens=250+6*850,queryTokens=Math.ceil(queryChars/4),promptOverhead=350;
+ const inputTokens=itemTokens+wardrobeTokens+wishlistTokens+styleTokens+queryTokens+promptOverhead,outputTokens=3200;
+ const costUSD=(inputTokens/1e6)*0.25+(outputTokens/1e6)*2.00;
+ return {inputTokens,outputTokens,costUSD};
+}
+function onCartAdviceInputChange(){
+ cartAdviceDeepConfirmed=false;
+ const btn=document.getElementById('cartAdviceBtn'),box=document.getElementById('cartAdviceEstimateBox');
+ if(!btn)return;
+ const est=estimateCartAdviceLocal();
+ if(box)box.innerHTML=`Estimation : ≈ ${est.inputTokens+est.outputTokens} tokens, environ <b>${est.costUSD.toFixed(4)} $</b>.`;
+ btn.innerHTML=est.costUSD>CART_ADVICE_CONFIRM_THRESHOLD_USD?'Voir le coût et confirmer':`${ICON_SPARKLE} Demander un avis`;
+}
+async function runCartAdviceGenerate(){
+ if(!cartAdviceSelection.length)return;
+ const query=val('caQuery').trim();
+ const btn=document.getElementById('cartAdviceBtn'),box=document.getElementById('cartAdviceEstimateBox');
+ const est=estimateCartAdviceLocal();
+
+ if(est.costUSD>CART_ADVICE_CONFIRM_THRESHOLD_USD&&!cartAdviceDeepConfirmed){
+  btn.disabled=true;btn.textContent='Calcul de l\'estimation…';
+  try{
+   const serverEst=await DB.estimateCartAdviceCost({itemCount:cartAdviceSelection.length,wardrobeItemCount:CART_ADVICE_WARDROBE_LIMIT,wishlistItemCount:CART_ADVICE_WISHLIST_LIMIT,queryChars:query.length});
+   box.innerHTML=`Cette demande coûte plus que la normale : <b>≈ ${serverEst.inputTokens+serverEst.outputTokens} tokens</b>, environ <b>${serverEst.costUSD.toFixed(4)} $</b>.`;
+   btn.textContent=`Confirmer et lancer (~${serverEst.costUSD.toFixed(4)} $)`;
+   cartAdviceDeepConfirmed=true;
+  }catch(e){box.textContent='Erreur estimation : '+e.message}
+  btn.disabled=false;
+  return;
+ }
+
+ btn.disabled=true;btn.textContent='Analyse en cours…';
+ try{
+  const result=await DB.getCartAdvice({itemUids:cartAdviceSelection,wardrobeItemLimit:CART_ADVICE_WARDROBE_LIMIT,wishlistItemLimit:CART_ADVICE_WISHLIST_LIMIT,query});
+  const saved=await DB.saveCartAdviceGeneration({itemUids:cartAdviceSelection,query,result});
+  cartAdviceHistoryCache.unshift(saved);
+  document.getElementById('cartAdviceResult').innerHTML=cartAdviceResultHTML(result);
+  renderCartAdviceHistoryCarousel();
+  toast('Analyse enregistrée');
+ }catch(e){toast(e.message||'Erreur IA')}
+ finally{cartAdviceDeepConfirmed=false;btn.disabled=false;btn.textContent=`${ICON_SPARKLE} Demander un avis`}
+}
+
 function openItemPhotos(uid){
  const x=byId(uid);if(!x)return;
  const imgs=itemImages(x),linked=outfitsForItem(uid);
@@ -433,7 +571,7 @@ function cartView(){
       <option value="brand" ${group==='brand'?'selected':''}>Séparer par marque</option>
     </select>
   </div>`:''}
-  ${xs.length?`<div class="cart-batchbar"><label><input id="selectAllCart" type="checkbox" onchange="toggleAllCartSelections(this.checked)"> Tout sélectionner</label><span class="cart-selected-count" id="cartSelectedCount">0 sélectionné</span><button class="btn primary" onclick="openBatchPurchaseFromCart()">✓ Marquer comme acheté</button></div>${listHtml}`:allCart.length?'<div class="empty">Aucun article ne correspond à ces filtres.</div>':'<div class="empty">Ton panier est vide.</div>'}`;
+  ${xs.length?`<div class="cart-batchbar"><label><input id="selectAllCart" type="checkbox" onchange="toggleAllCartSelections(this.checked)"> Tout sélectionner</label><span class="cart-selected-count" id="cartSelectedCount">0 sélectionné</span><button class="btn" onclick="openCartAdvice()">${ICON_SPARKLE} Avis IA</button><button class="btn primary" onclick="openBatchPurchaseFromCart()">✓ Marquer comme acheté</button></div>${listHtml}`:allCart.length?'<div class="empty">Aucun article ne correspond à ces filtres.</div>':'<div class="empty">Ton panier est vide.</div>'}`;
 }
 function trashView(){const xs=state.trash.map(byId).filter(Boolean);return `<div class="catalog-head"><div><h1>Corbeille</h1></div><div class="catalog-tools"><button class="btn danger" onclick="emptyTrash()">Vider définitivement</button></div></div>${xs.length?`<div class="listview">${xs.map(x=>listItem(x,'trash')).join('')}</div>`:'<div class="empty">La corbeille est vide.</div>'}`}
 function listItem(x,mode){if(mode==='cart')return `<div class="listitem cart-listitem"><label class="cart-select" title="Sélectionner"><input type="checkbox" data-cart-select="${x.uid}" onchange="updateCartSelectedCount()"></label><div class="img-zoom-wrap"><img src="${mainImage(x)}" alt=""><img class="img-zoom-preview" src="${mainImage(x)}" alt=""></div><div><h3>${esc(x.name)}</h3><p>${esc(x.brand)} · ${esc(x.store)} · ${esc(x.price||'')}</p></div><div class="list-actions">${x.url?`<a class="btn" href="${safeUrl(x.url)}" target="_blank" rel="noopener">Voir l'article ↗</a>`:''}<button class="btn" onclick="openItemEditor('${x.uid}')">Modifier</button><button class="btn" onclick="openPurchaseModal(['${x.uid}'])">✓ Acheté</button><button class="btn" onclick="toggleCart('${x.uid}')">Retirer du panier</button></div></div>`;return `<div class="listitem"><img src="${mainImage(x)}" alt=""><div><h3>${esc(x.name)}</h3><p>${esc(x.brand)} · ${esc(x.store)} · ${esc(x.price||'')}</p></div><div class="list-actions"><button class="btn primary" onclick="restoreItem('${x.uid}')">Restaurer</button><button class="btn danger" onclick="deleteForever('${x.uid}')">Supprimer</button></div></div>`}

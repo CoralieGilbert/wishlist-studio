@@ -228,6 +228,22 @@ create index if not exists outfit_advice_generations_outfit_idx on outfit_advice
 alter table outfit_advice_generations enable row level security;
 create policy "own rows only" on outfit_advice_generations for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
+-- === HISTORIQUE AVIS IA PANIER (sélection libre d'articles) =================
+-- Avis IA sur une sélection quelconque de pièces du panier (pas liée à un
+-- objet précis comme une tenue) : avis + tenues possibles + suggestions
+-- d'ajout/retrait ancrées dans de vrais uid, historique global par personne.
+create table if not exists cart_advice_generations (
+  id bigint generated always as identity primary key,
+  user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  item_uids text[] not null,
+  query text,
+  result jsonb not null,
+  created_at timestamptz not null default now()
+);
+create index if not exists cart_advice_generations_user_idx on cart_advice_generations(user_id, created_at desc);
+alter table cart_advice_generations enable row level security;
+create policy "own rows only" on cart_advice_generations for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
 -- === Stockage des photos (bucket "wishlist-photos") ========================
 -- Lecture publique (URLs non répertoriées, cf. décision produit), mais
 -- l'écriture (upload/suppression) nécessite d'être connectée. Sans cette

@@ -210,6 +210,8 @@ async function estimateShoppingCost(params) { return callApi('/api/estimate-shop
 async function runShoppingAssistant(params) { return callApi('/api/shopping-assistant', params); }
 async function estimateOutfitCost(params) { return callApi('/api/estimate-outfit-cost', params); }
 async function getOutfitAdvice(params) { return callApi('/api/outfit-advice', params); }
+async function estimateCartAdviceCost(params) { return callApi('/api/estimate-cart-advice-cost', params); }
+async function getCartAdvice(params) { return callApi('/api/cart-advice', params); }
 
 // === Profil "Mon Style" (texte + captures Pinterest) =======================
 async function getStyleProfile() {
@@ -286,4 +288,26 @@ async function deleteOutfitAdviceGeneration(id) {
   if (error) throw error;
 }
 
-window.DB = { loadState, persistState, snapshot, uploadDataUri, getSettings, saveOpenAIKey, analyzeImageAI, estimateStyleCost, generateStyle, getStyleProfile, saveStyleText, addStyleImage, removeStyleImage, estimateShoppingCost, runShoppingAssistant, estimateOutfitCost, getOutfitAdvice, saveShoppingGeneration, listShoppingGenerations, deleteShoppingGeneration, saveOutfitAdviceGeneration, listOutfitAdviceGenerations, deleteOutfitAdviceGeneration };
+// === Historique Avis IA Panier (sélection libre d'articles) ================
+async function saveCartAdviceGeneration({ itemUids, query, result }) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Non connectée');
+  const { data, error } = await supabase.from('cart_advice_generations')
+    .insert({ user_id: user.id, item_uids: itemUids, query: query || null, result })
+    .select().single();
+  if (error) throw error;
+  return data;
+}
+async function listCartAdviceGenerations(limit = 20) {
+  const { data, error } = await supabase.from('cart_advice_generations')
+    .select('id,item_uids,query,result,created_at')
+    .order('created_at', { ascending: false }).limit(limit);
+  if (error) throw error;
+  return data || [];
+}
+async function deleteCartAdviceGeneration(id) {
+  const { error } = await supabase.from('cart_advice_generations').delete().eq('id', id);
+  if (error) throw error;
+}
+
+window.DB = { loadState, persistState, snapshot, uploadDataUri, getSettings, saveOpenAIKey, analyzeImageAI, estimateStyleCost, generateStyle, getStyleProfile, saveStyleText, addStyleImage, removeStyleImage, estimateShoppingCost, runShoppingAssistant, estimateOutfitCost, getOutfitAdvice, saveShoppingGeneration, listShoppingGenerations, deleteShoppingGeneration, saveOutfitAdviceGeneration, listOutfitAdviceGenerations, deleteOutfitAdviceGeneration, estimateCartAdviceCost, getCartAdvice, saveCartAdviceGeneration, listCartAdviceGenerations, deleteCartAdviceGeneration };
