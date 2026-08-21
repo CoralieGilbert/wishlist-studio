@@ -16,10 +16,10 @@
  <button class="brandmark" onclick="go('home')"><b>Wishlist Studio</b></button>
  <nav class="nav" id="nav"></nav>
  <div class="actions">
-   <button class="iconbtn" title="Panier" onclick="go('cart')">🛒<span class="counter hide" id="cartCount"></span></button>
+   <button class="iconbtn" title="Panier" onclick="go('cart')"><svg class="icon-red" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-4px"><circle cx="9" cy="20" r="1"/><circle cx="18" cy="20" r="1"/><path d="M2 3h2l2.6 12.4a1.8 1.8 0 0 0 1.8 1.6h8a1.8 1.8 0 0 0 1.8-1.4L21 7H5.5"/></svg><span class="counter hide" id="cartCount"></span></button>
    <button class="iconbtn" title="Corbeille" onclick="go('trash')">⌫<span class="counter hide" id="trashCount"></span></button>
    <button class="btn primary" onclick="openQuickAdd()"><span class="label">Ajouter</span> +</button>
-   <button class="iconbtn" title="Mon Style" onclick="go('style')">🎨</button>
+   <button class="iconbtn" title="Mon Style" onclick="go('style')"><svg class="icon-red" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-4px"><path d="M12 2a10 10 0 1 0 .001 20c1.5 0 2-1 2-2 0-.5-.2-1-.5-1.3-.3-.4-.5-.8-.5-1.2 0-1 .8-1.5 1.5-1.5H16a4 4 0 0 0 4-4C20 6.5 16.4 2 12 2z"/><circle cx="7" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="9" cy="8" r="1" fill="currentColor" stroke="none"/><circle cx="14" cy="8" r="1" fill="currentColor" stroke="none"/><circle cx="16.5" cy="12" r="1" fill="currentColor" stroke="none"/></svg></button>
    <button class="iconbtn" title="Se déconnecter" onclick="Auth.logout()">⏻</button>
  </div>
 </div></header>
@@ -49,7 +49,7 @@
     <div class="quick-count" id="quickCount">Aucune image sélectionnée</div>
     <div class="quick-preview" id="quickPreview"></div>
   </div>
-</div><div class="modalfoot"><button class="btn" onclick="clearQuickImages()">Effacer</button><button class="btn" onclick="closeModal('quickAddModal')">Annuler</button><button class="btn" id="quickAnalyzeBtn" onclick="quickAnalyzeAI()" disabled>✨ Analyser avec l'IA</button><button class="btn primary" id="quickCreateBtn" onclick="createQuickDrafts()" disabled>Créer les brouillons</button></div></div></div>
+</div><div class="modalfoot"><button class="btn" onclick="clearQuickImages()">Effacer</button><button class="btn" onclick="closeModal('quickAddModal')">Annuler</button><button class="btn" id="quickAnalyzeBtn" onclick="quickAnalyzeAI()" disabled><svg class="icon-red" viewBox="0 0 24 24" width="14" height="14" fill="currentColor" style="vertical-align:-2px"><path d="M12 2l1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8L12 2z"/></svg> Analyser avec l'IA</button><button class="btn primary" id="quickCreateBtn" onclick="createQuickDrafts()" disabled>Créer les brouillons</button></div></div></div>
 
 
 <div class="modalback" id="purchaseModal"><div class="modal wide purchase-modal"><div class="modalhead"><h2 id="purchaseModalTitle">Marquer comme acheté</h2><button class="close" onclick="closeModal('purchaseModal')">×</button></div><div class="modalbody" id="purchaseModalBody"></div><div class="modalfoot"><span class="purchase-modal-meta" id="purchaseModalMeta"></span><button class="btn" onclick="closeModal('purchaseModal')">Annuler</button><button class="btn primary" onclick="savePurchaseModal()">Enregistrer l’achat</button></div></div></div>

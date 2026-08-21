@@ -10,6 +10,8 @@ a,button,.btn,.circle,.colorchip,.pin,.collection-card,.wardrobe-card,.outfit-ca
 @media(prefers-reduced-motion:reduce){*{transition-duration:0.001ms!important;animation-duration:0.001ms!important}}
 a{color:inherit}.app{min-height:100vh}.topbar{position:sticky;top:0;z-index:50;background:rgba(20,18,15,.85);backdrop-filter:blur(16px);border-bottom:1px solid var(--line)}
 .topbar-inner{max-width:1540px;margin:auto;padding:13px 22px;display:grid;grid-template-columns:auto 1fr auto;gap:18px;align-items:center}.brandmark{border:0;background:none;padding:0;text-align:left}.brandmark b{display:block;font:500 clamp(22px,3vw,34px)/1 var(--serif)}.brandmark span{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.18em;color:var(--muted);margin-top:5px}.nav{display:flex;justify-content:center;gap:4px;flex-wrap:wrap}.nav button,.iconbtn{border:0;background:transparent;border-radius:999px;padding:9px 12px}.nav button.active{background:var(--dark);color:white}.actions{display:flex;align-items:center;gap:6px}.iconbtn{position:relative;font-size:18px}.counter{position:absolute;top:2px;right:1px;background:var(--sale);color:white;border-radius:999px;min-width:18px;height:18px;display:grid;place-items:center;font-size:10px;padding:0 4px}
+.icon-red{color:var(--sale)}
+.btn.primary .icon-red,.circle.cart-active .icon-red{color:currentColor}
 .shell{max-width:1540px;margin:auto;padding:26px 22px 80px}
 .section{margin:34px 0}.section-head{display:flex;align-items:end;justify-content:space-between;gap:16px;margin-bottom:15px}.section-head h2{font:500 clamp(28px,4vw,46px)/1.05 var(--serif);margin:0}.section-head p{display:none}.textbtn{border:0;background:none;text-decoration:underline;text-underline-offset:4px;padding:6px}
 
