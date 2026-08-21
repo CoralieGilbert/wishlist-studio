@@ -67,7 +67,7 @@ function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t
 function navRender(){document.getElementById('nav').innerHTML=NAV.map(([p,l])=>`<button class="${route.page===p?'active':''}" onclick="go('${p}')">${l}</button>`).join('');const cc=state.cart.length,tc=state.trash.length;setCount('cartCount',cc);setCount('trashCount',tc)}
 function setCount(id,n){const el=document.getElementById(id);el.textContent=n;el.classList.toggle('hide',!n)}
 function go(page,filter={}){route={page,filter};window.scrollTo({top:0,behavior:'smooth'});const v=document.getElementById('view');v.classList.add('view-out');setTimeout(()=>{render();v.classList.remove('view-out')},110)}
-function render(){navRender();const v=document.getElementById('view'); if(route.page==='home')v.innerHTML=homeView();else if(route.page==='catalog')v.innerHTML=catalogView();else if(route.page==='wardrobe')v.innerHTML=wardrobeView();else if(route.page==='collections')v.innerHTML=collectionsView();else if(route.page==='purchases')v.innerHTML=purchasesView();else if(route.page==='cart')v.innerHTML=cartView();else if(route.page==='trash')v.innerHTML=trashView();wireAfterRender()}
+function render(){navRender();const v=document.getElementById('view'); if(route.page==='home')v.innerHTML=homeView();else if(route.page==='catalog')v.innerHTML=catalogView();else if(route.page==='wardrobe')v.innerHTML=wardrobeView();else if(route.page==='collections')v.innerHTML=collectionsView();else if(route.page==='purchases')v.innerHTML=purchasesView();else if(route.page==='cart')v.innerHTML=cartView();else if(route.page==='trash')v.innerHTML=trashView();else if(route.page==='style'){v.innerHTML=`<div class="catalog-head"><div><h1>Mon Style</h1></div></div><div class="form" id="styleModalBody"><p style="color:var(--muted)">Chargement…</p></div>`;loadStyleView()}wireAfterRender()}
 function countBy(arr,key){return arr.reduce((a,x)=>{const k=x[key]||'Autre';a[k]=(a[k]||0)+1;return a},{})}
 function uniq(arr){return [...new Set(arr.filter(Boolean))].sort((a,b)=>String(a).localeCompare(String(b),'fr'))}
 function priceTotals(items){const t={};items.forEach(x=>{if(Number.isFinite(Number(x.price_num))){const c=x.currency&&x.currency!=='Non précisée'?x.currency:'?';t[c]=(t[c]||0)+Number(x.price_num)}});return t}
@@ -350,9 +350,7 @@ async function saveAIKey(){
 let styleImages=[];
 let styleDeepConfirmed=false;
 
-async function openStyleModal(){
-  openModal('styleModal');
-  document.getElementById('styleModalBody').innerHTML='<p style="color:var(--muted)">Chargement…</p>';
+async function loadStyleView(){
   const profile=await DB.getStyleProfile();
   styleImages=profile.images;
   renderStyleModal(profile.style_text);
@@ -479,6 +477,7 @@ async function runStyleGenerate(){
     const imagesToSend=styleImages.slice(-imageCount).map(p=>p.url);
     const result=await DB.generateStyle({currentText:text,mode,images:imagesToSend,useWishlistSummary,wishlistItemCount});
     document.getElementById('styleText').value=result.styleText;
+    await DB.saveStyleText(result.styleText);
     toast('Texte généré — relis et enregistre si ça te convient');
   }catch(e){toast(e.message||'Erreur IA')}
   finally{btn.disabled=false;styleDeepConfirmed=false;box.innerHTML='';onStyleSliderChange()}
