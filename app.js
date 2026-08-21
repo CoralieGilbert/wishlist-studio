@@ -772,7 +772,12 @@ async function runShoppingGenerate(){
   const query=[(document.getElementById('shopQuery')?.value||'').trim(),extra].filter(Boolean).join('\n');
   const itemLimit=Number(document.getElementById('shopItemSlider')?.value||0);
   const btn=document.getElementById('shoppingGenerateBtn'),box=document.getElementById('shoppingEstimateBox'),results=document.getElementById('shoppingResults');
-  if(!budget&&!query){toast('Indique un budget ou ce que tu recherches');return}
+  if(!budget&&!query){
+    toast('Indique un budget ou ce que tu recherches');
+    const qEl=document.getElementById('shopQuery');
+    if(qEl){qEl.focus();qEl.style.borderColor='var(--sale)';setTimeout(()=>{qEl.style.borderColor=''},2200)}
+    return
+  }
   const est=estimateShoppingLocal(itemLimit);
 
   if(est.costUSD>SHOPPING_CONFIRM_THRESHOLD_USD&&!shoppingDeepConfirmed){
