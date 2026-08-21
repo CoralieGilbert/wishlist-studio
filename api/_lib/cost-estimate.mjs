@@ -4,7 +4,7 @@
 const PRICE_IN_PER_M = 0.15;
 const PRICE_OUT_PER_M = 0.60;
 const TOKENS_PER_IMAGE = 850; // ordre de grandeur pour une image compressée en detail "auto"
-const OUTPUT_TOKENS_STYLE = 400;
+const OUTPUT_TOKENS_STYLE = 950;
 
 const TOKENS_PER_WISHLIST_ITEM = 45; // ~une ligne "nom (marque) — catégorie, couleur, prix [tags]"
 

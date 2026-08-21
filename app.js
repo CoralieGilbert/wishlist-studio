@@ -401,7 +401,7 @@ function estimateStyleLocal({textChars,imageCount,useWishlistSummary,wishlistIte
   const summaryTokens=useWishlistSummary?500:0;
   const itemTokens=wishlistItemCount*45;
   const inputTokens=textTokens+imageTokens+summaryTokens+itemTokens+300;
-  const outputTokens=400;
+  const outputTokens=950;
   const costUSD=(inputTokens/1e6)*0.15+(outputTokens/1e6)*0.60;
   return {inputTokens,outputTokens,costUSD};
 }

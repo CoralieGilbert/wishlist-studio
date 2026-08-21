@@ -19,16 +19,17 @@ Règle absolue : INTERDICTION d'utiliser des mots creux seuls (bohème, chic, é
     : `Elle n'a pas encore de texte : pars de zéro.\n`;
   if (hasImages) p += `Des captures de son board Pinterest / de ses inspirations sont jointes : analyse-les vraiment (coupes, matières, couleurs, ambiance) plutôt que de les mentionner en passant.\n`;
   if (hasWishlistContext) p += `Voici des indices sur ses goûts réels (wishlist, vestiaire, pièces envisagées à l'achat) :\n${wishlistContext}\n`;
-  p += `Cherche activement des TENSIONS ou CONTRASTES récurrents (ex : pièce ajustée + volume énorme, matière brute + détail féminin, sobre + un accessoire qui détonne) plutôt qu'une esthétique uniforme — c'est souvent ça qui rend un style reconnaissable, pas une étiquette unique (éviter d'enfermer dans "boho" ou "romantique" si la réalité est plus spécifique).
+  p += `Avant de rédiger, cherche silencieusement : (1) un POINT COMMUN sous-jacent qui explique plusieurs pièces à la fois, pas juste une liste de goûts séparés ; (2) des TENSIONS ou CONTRASTES récurrents (ex : pièce ajustée + volume énorme, matière brute + détail féminin, sobre + un accessoire qui détonne). C'est ça qui rend un style reconnaissable — pas une étiquette unique. N'enferme pas dans "boho" ou "romantique" si la réalité est plus spécifique ; si une étiquette large est vraiment la plus juste, précise immédiatement ce qui la rend "pas sage"/différente du cliché.
 
 Structure la réponse en paragraphes courts, chacun introduit par son titre en gras (**Titre**), sans liste à puces :
-**Silhouettes** — les volumes et proportions récurrents, nommés précisément (pas juste "ample/ajusté" : dire où et comment).
+**Le point commun** — ouvre sur LA chose sous-jacente qui relie ses choix (une phrase forte, pas une généralité).
+**Silhouettes** — les volumes et proportions récurrents, nommés précisément (pas juste "ample/ajusté" : dire où et comment, quelle pièce avec quelle pièce).
 **Matières** — les matières et textures dominantes, et ce qu'elles disent (brut, travaillé, précieux, vécu...).
 **Structures** — construction des pièces (drapé, corseté, superposé, asymétrique, brodé...).
 **Couleurs** — la palette réelle, nommée avec des couleurs précises (pas "des teintes neutres").
 **Accessoires et chaussures** — si les données en disent quelque chose, ce qui revient et ce que ça change à une tenue.
-**Style** — l'ambiance générale, en évitant les étiquettes toutes faites sauf si vraiment justifiées.
-Termine par **Mon analyse personnalisée** : une synthèse fine et spécifique (jamais une généralité), qui nomme ce qui rend ce style reconnaissable, et propose une règle concrète et utilisable pour juger un futur achat (une question simple à se poser avant d'acheter une pièce).
+**Ce qui casse le style** — un écueil concret à éviter (ex : un mélange trop lisse/coordonné/sage qui ferait perdre ce qui la rend reconnaissable), utile pour juger un futur achat.
+Termine par **Mon analyse personnalisée** : une synthèse fine et spécifique (jamais une généralité), un nom provisoire pour ce style (2-4 mots, pas une étiquette toute faite), et une règle concrète en une phrase pour juger un futur achat.
 Réponds uniquement avec ce texte, sans guillemets.`;
   return p;
 }
@@ -59,7 +60,7 @@ export default async function handler(req, res) {
     const openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify({ model: 'gpt-4o-mini', messages: [{ role: 'user', content }], max_tokens: 500 }),
+      body: JSON.stringify({ model: 'gpt-4o-mini', messages: [{ role: 'user', content }], max_tokens: 1100 }),
     });
     if (!openaiRes.ok) {
       const t = await openaiRes.text().catch(() => '');
