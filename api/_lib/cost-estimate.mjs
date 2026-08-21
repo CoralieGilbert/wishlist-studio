@@ -41,7 +41,7 @@ export function estimateOutfitAdvice({ outfitItemCount = 0, wardrobeItemCount = 
   const outfitTokens = outfitItemCount * TOKENS_PER_WISHLIST_ITEM;
   const wardrobeTokens = wardrobeItemCount * TOKENS_PER_WISHLIST_ITEM;
   const wishlistTokens = wishlistItemCount * TOKENS_PER_WISHLIST_ITEM;
-  const styleTokens = 250;
+  const styleTokens = 250 + 6 * TOKENS_PER_IMAGE;
   const promptOverhead = 300;
   const inputTokens = outfitTokens + wardrobeTokens + wishlistTokens + styleTokens + promptOverhead;
   const outputTokens = OUTPUT_TOKENS_OUTFIT;
