@@ -26,26 +26,31 @@ const SCHEMA = {
 };
 
 const SYSTEM_PROMPT = `Tu analyses une capture d'écran ou une photo d'un article (vêtement, chaussure, bijou, accessoire...) trouvé en ligne.
-Extrais uniquement les informations clairement visibles sur l'image. N'invente jamais une donnée incertaine : mets null plutôt que de deviner.
+Extrais les informations visibles sur l'image. N'invente jamais une donnée incertaine : mets null plutôt que de deviner.
 "sale" = true seulement si un prix barré ou une mention de solde est clairement visible.
-"url" : uniquement si une adresse de page produit COMPLÈTE et entièrement lisible est visible (ex. barre d'adresse d'une capture d'écran de navigateur, du domaine jusqu'au bout du chemin, rien de coupé). Si l'adresse est partiellement visible, tronquée, coupée par le bord de l'image ou illisible en partie, mets null — ne renvoie jamais une adresse incomplète ou devinée.
+"url" : identifie la marque/le magasin et le nom du produit depuis l'image, puis CHERCHE SUR LE WEB la page produit officielle correspondante et mets son URL exacte. Si aucune correspondance fiable n'est trouvée, mets null — ne devine jamais une URL et n'en invente jamais une à partir d'un fragment partiellement visible dans l'image.
 "tags" : 2 à 6 mots-clés descriptifs courts en français, seulement si évidents depuis l'image (matière, style, motif...).`;
 
+// Utilise la Responses API (pas Chat Completions) : c'est la seule qui
+// expose l'outil hébergé "web_search", nécessaire pour que l'IA cherche
+// réellement le lien produit sur le web plutôt que de lire un fragment
+// d'URL dans l'image (ce qui donnait des liens tronqués/inutilisables).
 export async function analyzeImage(dataUri, apiKey) {
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
+  const res = await fetch('https://api.openai.com/v1/responses', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
     body: JSON.stringify({
       model: 'gpt-5-mini',
-      messages: [
+      input: [
         { role: 'system', content: SYSTEM_PROMPT },
         { role: 'user', content: [
-          { type: 'text', text: 'Analyse cette image et remplis la fiche.' },
-          { type: 'image_url', image_url: { url: dataUri } },
+          { type: 'input_text', text: 'Analyse cette image et remplis la fiche, en cherchant le lien produit sur le web si tu identifies la marque et le nom du produit.' },
+          { type: 'input_image', image_url: dataUri },
         ] },
       ],
-      response_format: { type: 'json_schema', json_schema: { name: 'article_fiche', strict: true, schema: SCHEMA } },
-      max_completion_tokens: 1200,
+      tools: [{ type: 'web_search' }],
+      text: { format: { type: 'json_schema', name: 'article_fiche', strict: true, schema: SCHEMA } },
+      max_output_tokens: 3500,
     }),
   });
   if (!res.ok) {
@@ -55,7 +60,8 @@ export async function analyzeImage(dataUri, apiKey) {
     throw err;
   }
   const data = await res.json();
-  const content = data.choices?.[0]?.message?.content;
+  const message = (data.output || []).find(o => o.type === 'message');
+  const content = message?.content?.find(c => c.type === 'output_text')?.text;
   if (!content) throw new Error('Réponse vide de l\'IA');
   return JSON.parse(content);
 }

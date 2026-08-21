@@ -143,9 +143,18 @@ Menu principal (4 items) + sous-menu contextuel sous "Wishlist" :
 
 - **Analyse d'image → fiche préremplie** (`analyze-image`) : depuis le
   Quick Add, bouton "Analyser avec l'IA" sur une image collée/déposée.
-  Renvoie marque/nom/prix/devise/solde/catégorie/couleur/tags en JSON
+  Renvoie marque/nom/prix/devise/solde/catégorie/couleur/tags/url en JSON
   strict ; ne devine jamais un champ incertain (consigne explicite dans le
-  prompt : `null` plutôt qu'une valeur inventée).
+  prompt : `null` plutôt qu'une valeur inventée). Seul endpoint IA à
+  utiliser la **Responses API** (`/v1/responses`, pas Chat Completions) :
+  c'est la seule qui expose l'outil hébergé `web_search`, nécessaire pour
+  que l'IA identifie la marque/le nom puis cherche réellement le lien
+  produit sur le web (lire un fragment d'URL dans l'image ne donnait que
+  des liens tronqués/inutilisables). Coût réel mesuré : ~0,006-0,04 $ par
+  analyse selon le nombre de requêtes de recherche effectuées (tarif
+  `web_search` : 10 $/1000 appels pour un modèle de raisonnement comme
+  gpt-5-mini, tokens de recherche facturés en plus au tarif normal du
+  modèle).
 - **Ajout par lien** (`fetch-link`) : PAS de l'IA — parse le HTML public de
   la page produit (og:image, twitter:image, JSON-LD) pour récupérer titre +
   jusqu'à 2 photos. Gratuit, pas de clé API requise.
