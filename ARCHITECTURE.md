@@ -216,7 +216,9 @@ avec schema JSON strict quand la réponse doit être structurée → erreurs
 
 Déjà fait et au-delà du cahier des charges d'origine : BYOK IA, Personal
 Shopper budget-aware, profil de style, conseils de tenue groundés
-Pinterest, ajout par lien.
+Pinterest, ajout par lien, avis IA panier, réimport d'un backup JSON
+(`importDataFile()` dans `app.js` — restauration complète via le même
+mécanisme de sync par diff que `persist()`, pas une fusion).
 
 Pas encore fait, à checker si besoin :
 - Détection automatique de doublons wishlist/vestiaire.
@@ -224,14 +226,17 @@ Pas encore fait, à checker si besoin :
   base (au-delà de ce que `analyze-image` propose déjà par photo).
 - PWA / installation écran d'accueil (mentionné "souhaitable" dans le
   cahier des charges, pas vu de manifest/service worker dans `index.html`).
-- Réimport d'un backup JSON (l'export existe — `exportData()` dans
-  `app.js` — mais je n'ai pas vu de fonction d'import côté nouvelle appli,
-  contrairement à l'ancien monolithe qui avait `importData()`).
 
 ## 7. Notes utiles pour bosser dessus
 
 - Pas de build : toute modif de `app.js`/`styles.css`/`index.html` est
   visible directement, Vercel redéploie sur push vers `main`.
+- **Cache-busting** : `index.html` charge `db.js?v=N`/`app.js?v=N`.
+  Incrémenter `N` à CHAQUE modif de ces deux fichiers avant de pousser,
+  sinon des navigateurs (surtout mobile, onglet resté ouvert) peuvent
+  continuer à servir l'ancien JS après un déploiement — vécu plusieurs
+  fois pendant les sessions de dev (hard-reload/`cache:'no-store'`
+  nécessaire pour voir le nouveau code sans ce paramètre).
 - `app.js` et `styles.css` ont des lignes très longues (CSS minifié à la
   main, JS avec du template-string HTML inline) — normal, pas un bug de
   formatage.

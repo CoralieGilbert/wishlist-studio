@@ -722,7 +722,8 @@ function createCollection(){const name=val('newCollName').trim();if(!name){toast
 function editCollection(id){const c=state.collections.find(x=>x.id===id);if(!c)return;const name=prompt('Nom de la collection',c.name);if(name===null)return;const desc=prompt('Description',c.description||'');c.name=name.trim()||c.name;c.description=desc??c.description;persist();render()}
 function deleteCollection(id){const c=state.collections.find(x=>x.id===id);if(!c||!confirm(`Supprimer la collection « ${c.name} » ? Les éléments resteront disponibles dans l’app.`))return;state.collections=state.collections.filter(x=>x.id!==id);persist();render()}
 async function openDataModal(){
-  document.getElementById('dataModalBody').innerHTML=`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px"><button class="btn primary" onclick="exportData()">Exporter mes données</button><button class="btn danger" onclick="Auth.logout()">Se déconnecter</button></div><div class="full"><span class="eyebrow">IA — ta clé personnelle</span><p style="color:var(--muted);font-size:12px;margin:6px 0 10px">Chaque compte utilise sa propre clé OpenAI (jamais partagée, jamais visible dans le code). <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">Créer une clé ↗</a></p><input id="aiKeyInput" type="password" placeholder="sk-..." style="width:100%;border:1px solid var(--line);background:var(--card);border-radius:13px;padding:11px 12px;margin-bottom:8px"><button class="btn primary" onclick="saveAIKey()">Enregistrer la clé</button><span id="aiKeyStatus" style="margin-left:8px;font-size:12px;color:var(--muted)"></span></div>`;
+  document.getElementById('dataModalBody').innerHTML=`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px"><button class="btn primary" onclick="exportData()">Exporter mes données</button><button class="btn" id="importDataBtn" onclick="triggerImportData()">Importer une sauvegarde</button><button class="btn danger" onclick="Auth.logout()">Se déconnecter</button></div><input id="importDataInput" type="file" accept="application/json" style="display:none"><p style="color:var(--muted);font-size:11px;margin:0 0 18px">Importer une sauvegarde REMPLACE tes données actuelles par celles du fichier (restauration complète, pas une fusion).</p><div class="full"><span class="eyebrow">IA — ta clé personnelle</span><p style="color:var(--muted);font-size:12px;margin:6px 0 10px">Chaque compte utilise sa propre clé OpenAI (jamais partagée, jamais visible dans le code). <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">Créer une clé ↗</a></p><input id="aiKeyInput" type="password" placeholder="sk-..." style="width:100%;border:1px solid var(--line);background:var(--card);border-radius:13px;padding:11px 12px;margin-bottom:8px"><button class="btn primary" onclick="saveAIKey()">Enregistrer la clé</button><span id="aiKeyStatus" style="margin-left:8px;font-size:12px;color:var(--muted)"></span></div>`;
+  document.getElementById('importDataInput')?.addEventListener('change',e=>importDataFile(e.target));
   openModal('dataModal');
   const s=await DB.getSettings();
   const input=document.getElementById('aiKeyInput');
@@ -1057,6 +1058,28 @@ function addShoppingPicksToCart(){
 }
 
 function exportData(){const blob=new Blob([JSON.stringify({version:4,exportedAt:new Date().toISOString(),state},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='wishlist-studio-backup-'+new Date().toISOString().slice(0,10)+'.json';a.click();URL.revokeObjectURL(a.href);toast('Backup exporté')}
+function triggerImportData(){document.getElementById('importDataInput')?.click()}
+async function importDataFile(fileInput){
+ const file=fileInput.files?.[0];if(!file)return;
+ fileInput.value='';
+ let parsed;
+ try{ parsed=JSON.parse(await file.text()); }catch(e){ toast('Fichier JSON invalide'); return; }
+ const imported=parsed?.state;
+ const requiredKeys=['articles','wardrobeItems','outfits','collections','cart','trash','favorites'];
+ if(!imported||!requiredKeys.every(k=>Array.isArray(imported[k]))){ toast('Ce fichier ne ressemble pas à une sauvegarde Wishlist Studio valide'); return; }
+ const counts=`${imported.articles.length} articles, ${imported.wardrobeItems.length} pièces vestiaire, ${imported.outfits.length} tenues, ${imported.collections.length} collections`;
+ if(!confirm(`Restaurer cette sauvegarde (${counts}) ?\n\nCela REMPLACE tes données actuelles : tout ce qui n'est pas dans la sauvegarde sera supprimé. Action irréversible (sauf si tu as exporté l'état actuel avant).`))return;
+ const btn=document.getElementById('importDataBtn');
+ if(btn){btn.disabled=true;btn.textContent='Restauration en cours…'}
+ try{
+  state={...state,articles:imported.articles,wardrobeItems:imported.wardrobeItems,outfits:imported.outfits,collections:imported.collections,cart:imported.cart||[],trash:imported.trash||[],favorites:imported.favorites||[]};
+  await persist();
+  closeModal('dataModal');
+  render();
+  toast('Sauvegarde restaurée');
+ }catch(e){toast('Erreur pendant la restauration'+(e.message?' : '+e.message:''))}
+ finally{if(btn){btn.disabled=false;btn.textContent='Importer une sauvegarde'}}
+}
 
 // === Démarrage : attend la session avant d'afficher quoi que ce soit ======
 Auth.onReady(async (session)=>{
