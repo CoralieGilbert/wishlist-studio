@@ -24,13 +24,14 @@ export function estimateStyleGeneration({ textChars = 0, imageCount = 0, useWish
   return { inputTokens, outputTokens, costUSD: priceUSD(inputTokens, outputTokens) };
 }
 
-const OUTPUT_TOKENS_SHOPPING = 700;
+const OUTPUT_TOKENS_SHOPPING = 1300;
 export function estimateShoppingAssistant({ candidateCount = 0 }) {
   const candidateTokens = candidateCount * TOKENS_PER_WISHLIST_ITEM;
   const wardrobeSummaryTokens = 500;
+  const wardrobeAndOutfitsTokens = 400;
   const styleTokens = 250;
   const promptOverhead = 300;
-  const inputTokens = candidateTokens + wardrobeSummaryTokens + styleTokens + promptOverhead;
+  const inputTokens = candidateTokens + wardrobeSummaryTokens + wardrobeAndOutfitsTokens + styleTokens + promptOverhead;
   const outputTokens = OUTPUT_TOKENS_SHOPPING;
   return { inputTokens, outputTokens, costUSD: priceUSD(inputTokens, outputTokens) };
 }

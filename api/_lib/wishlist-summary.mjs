@@ -66,3 +66,21 @@ export async function buildWardrobeCandidates(supabaseAdmin, userId, excludeUids
     .eq('user_id', userId).eq('wardrobe_active', true).limit(n + excludeUids.length);
   return (data || []).filter(w => !excludeUids.includes(w.uid)).slice(0, n);
 }
+
+// Vestiaire complet (nom/catégorie/couleur) + tenues existantes déjà
+// composées, pour que l'assistant shopping puisse dire concrètement avec
+// quoi une pièce achetée irait, ou quelle tenue elle améliorerait.
+export async function buildWardrobeAndOutfits(supabaseAdmin, userId) {
+  const [{ data: wardrobe }, { data: outfits }, { data: links }] = await Promise.all([
+    supabaseAdmin.from('wardrobe_items').select('uid,name,brand,category,color,color_family').eq('user_id', userId).eq('wardrobe_active', true),
+    supabaseAdmin.from('outfits').select('uid,name').eq('user_id', userId),
+    supabaseAdmin.from('outfit_items').select('outfit_uid,wardrobe_item_uid').eq('user_id', userId),
+  ]);
+  const w = wardrobe || [], byUid = new Map(w.map(x => [x.uid, x]));
+  const wardrobeText = w.map(x => `- ${x.name}${x.brand ? ` (${x.brand})` : ''} — ${x.category || ''}${x.color || x.color_family ? ', ' + (x.color || x.color_family) : ''}`).join('\n');
+  const outfitsText = (outfits || []).map(o => {
+    const pieces = (links || []).filter(l => l.outfit_uid === o.uid).map(l => byUid.get(l.wardrobe_item_uid)?.name).filter(Boolean);
+    return `- "${o.name || 'Tenue sans titre'}" : ${pieces.join(', ') || 'aucune pièce'}`;
+  }).join('\n');
+  return { wardrobeText, outfitsText };
+}
