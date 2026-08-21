@@ -380,8 +380,8 @@ function renderStyleModal(text){
   const hasText=!!(text&&text.trim());
   const n=styleImages.length;
   const maxItems=styleMaxWishlistItems();
-  const defItems=Math.min(5,maxItems);
-  const defPin=Math.min(6,n);
+  const defItems=0;
+  const defPin=n;
   document.getElementById('styleModalBody').innerHTML=`
     <label class="full"><span>Mon style, décrit avec mes mots</span><textarea id="styleText" style="min-height:140px" onblur="saveStyleTextOnly()">${esc(text||'')}</textarea></label>
     <div class="full" style="margin:2px 0 16px"><button class="btn primary" onclick="saveStyleTextOnly()">Enregistrer le texte</button></div>
