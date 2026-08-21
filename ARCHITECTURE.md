@@ -63,6 +63,8 @@ api/
   estimate-shopping-cost.js
   outfit-advice.js         POST — conseils IA sur une tenue existante (grounded style + Pinterest)
   estimate-outfit-cost.js
+  cart-advice.js           POST — avis IA sur une sélection libre du panier (tenues possibles + ajouts/retraits)
+  estimate-cart-advice-cost.js
   _lib/
     supabase-admin.mjs      client Supabase service_role + vérif du jeton Authorization
     analyze.mjs              prompt + schema JSON pour analyze-image
@@ -133,16 +135,24 @@ Menu principal (4 items) + sous-menu contextuel sous "Wishlist" :
   - **Personal Shopper** (`shopping`) — assistant IA (§5).
   - **Achats** (`purchases`) — historique des achats + totaux par devise.
 - **Vestiaire** (`wardrobe`) — pièces possédées + tenues, statistiques
-  (pièces / à trier / tenues), filtres par décision vestiaire.
+  (pièces / à trier / tenues), filtres par décision vestiaire. Chaque
+  tenue a sa propre page (`outfit`, route dédiée — pas une modal), avec
+  bouton "Conseils IA" (§5) ; l'icône ✦ sur une carte de tenue ouvre les
+  Conseils IA en raccourci direct sans passer par la page.
 - **Collections** (`collections`) — boards thématiques (+ "Favoris" en
   collection virtuelle toujours présente).
-- **Panier** (`cart`, accessible via icône) — sélection multiple → achat
-  groupé, lien direct vers Personal Shopper.
+- **Panier** (`cart`, accessible via icône) — sélection multiple (cases à
+  cocher) → achat groupé ou **Avis IA** (§5) ; filtres marque/magasin/
+  type + tri (ordre d'ajout panier/wishlist, prix) + regroupement
+  (magasin/catégorie/marque) ; survol d'une miniature = aperçu agrandi au
+  centre de l'écran ; lien direct vers Personal Shopper.
 - **Corbeille** (`trash`, icône) — restauration ou suppression définitive.
 - **Mon Style** (icône palette) — page dédiée, profil de style (§5).
-- Modals transverses : fiche article/tenue (édition), galerie photo
-  (carrousel), sélecteur de collection, "Données & sauvegarde" (export
-  JSON + clé API + déconnexion).
+- Modals transverses : fiche article (édition — icône corbeille en haut à
+  droite pour supprimer directement, capture photo depuis mobile),
+  Conseils IA / Avis IA panier, galerie photo (carrousel), sélecteur de
+  collection, "Données & sauvegarde" (export JSON + clé API +
+  déconnexion).
 
 ## 5. Fonctionnalités IA (toutes en `gpt-5-mini`, BYOK, coût affiché avant appel)
 
