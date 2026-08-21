@@ -240,10 +240,10 @@ async function openOutfitAdvice(id){
 function outfitSuggestionCard(pick,kind){
  const x=byId(pick.uid);if(!x)return '';
  const actionBtn=kind==='remove'
-   ?`<button onclick="removeItemFromOutfit('${outfitAdviceTarget.uid}','${pick.uid}')">Retirer de la tenue</button>`
+   ?`<button class="btn danger" onclick="removeItemFromOutfit('${outfitAdviceTarget.uid}','${pick.uid}')">Retirer de la tenue</button>`
    :kind==='add-wardrobe'
-     ?`<button onclick="addItemToOutfit('${outfitAdviceTarget.uid}','${pick.uid}')">Ajouter à cette tenue</button>`
-     :`<button onclick="addSuggestionToCart('${pick.uid}')">Ajouter au panier</button>`;
+     ?`<button class="btn" onclick="addItemToOutfit('${outfitAdviceTarget.uid}','${pick.uid}')">Ajouter à cette tenue</button>`
+     :`<button class="btn" onclick="addSuggestionToCart('${pick.uid}')">Ajouter au panier</button>`;
  return `<div class="listitem"><img src="${mainImage(x)}" alt=""><div><h3>${esc(x.name)}</h3><p style="color:var(--muted);font-size:11px">${esc(pick.reason||'')}</p></div><div class="list-actions">${actionBtn}</div></div>`;
 }
 function outfitAdviceResultHTML(result){
