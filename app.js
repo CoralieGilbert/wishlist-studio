@@ -818,7 +818,7 @@ function shoppingResultHTML(result){
   return `<div style="border-top:1px solid var(--line);padding-top:14px">
       <p style="color:var(--muted);font-size:13px">${esc(result.note||'')}</p>
       <div class="statsline"><span class="pill">Total : ${esc(totals)}</span><span class="pill">Budget visé : ${esc(String(result.budget?.amount||''))} ${esc(result.budget?.currency||'')}</span></div>
-      <div class="listview" style="margin-top:10px">${picks.map(p=>`<div class="listitem"><img src="${mainImage(p.item)}" alt=""><div><h3>${esc(p.item.name)}</h3><p>${esc(p.item.brand||'')} · ${esc(p.item.price||'')}</p><p style="color:var(--muted);font-size:11px">${esc(p.reason||'')}</p>${p.outfit_note?`<p style="font-size:11px;margin-top:4px"><b>${ICON_SPARKLE} Avec ton vestiaire :</b> ${esc(p.outfit_note)}</p>`:''}</div></div>`).join('')||'<div class="empty">Aucune suggestion.</div>'}</div>
+      <div class="listview" style="margin-top:10px">${picks.map(p=>{const tag=p.item.url?'a':'div';const attrs=p.item.url?`href="${safeUrl(p.item.url)}" target="_blank" rel="noopener"`:'';return `<${tag} class="listitem" ${attrs}><img src="${mainImage(p.item)}" alt=""><div><h3>${esc(p.item.name)}</h3><p>${esc(p.item.brand||'')} · ${esc(p.item.price||'')}</p><p style="color:var(--muted);font-size:11px">${esc(p.reason||'')}</p>${p.outfit_note?`<p style="font-size:11px;margin-top:4px"><b>${ICON_SPARKLE} Avec ton vestiaire :</b> ${esc(p.outfit_note)}</p>`:''}</div></${tag}>`}).join('')||'<div class="empty">Aucune suggestion.</div>'}</div>
       ${picks.length?`<div class="full" style="margin-top:12px"><button class="btn primary" onclick="addShoppingPicksToCart()">Ajouter ces ${picks.length} pièces au panier</button></div>`:''}
     </div>`;
 }
