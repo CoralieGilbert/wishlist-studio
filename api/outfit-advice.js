@@ -33,7 +33,10 @@ ${outfitItems.map(formatItem).join('\n')}
 ${settings.style_text ? `\nStyle personnel de la personne :\n${settings.style_text}\n` : ''}
 ${wardrobeCandidates.length ? `\nAutres pièces qu'elle possède déjà (candidates pour un remplacement) :\n${wardrobeCandidates.map(formatItem).join('\n')}\n` : ''}
 ${wishlistCandidates.length ? `\nPièces de sa wishlist (candidates pour un achat qui compléterait la tenue) :\n${wishlistCandidates.map(formatItem).join('\n')}\n` : ''}
-Donne 2 à 4 suggestions concrètes et courtes pour améliorer cette tenue (garder/remplacer une pièce, ajouter un accessoire, etc.), en t'appuyant UNIQUEMENT sur les pièces listées ci-dessus si tu suggères un remplacement ou un ajout — n'invente aucune pièce qui n'est pas dans les listes. Réponds en français, sous forme de liste à puces courtes, sans préambule.`;
+Réponds en français, en deux temps :
+1. **Ton avis d'abord** : ce que tu aurais fait différemment — quelle pièce ajouter, quoi enlever, ce qui ne fonctionne pas selon toi (silhouette, couleur, proportions...). Si la tenue est déjà réussie et fidèle à son style, dis-le franchement plutôt que d'inventer un défaut.
+2. **Propositions concrètes** : si tu vois un vrai axe d'amélioration, propose 1 à 3 pièces précises qui fonctionneraient mieux, prises UNIQUEMENT dans les listes ci-dessus (vestiaire ou wishlist) — n'invente jamais une pièce absente des listes. Si rien ne sert vraiment la tenue, dis-le plutôt que de forcer une suggestion.
+Format : deux courts paragraphes, pas de liste à puces, pas de préambule.`;
 
   try {
     const openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {

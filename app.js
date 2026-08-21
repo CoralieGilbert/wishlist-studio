@@ -3,7 +3,7 @@
 // de la migration.
 
 const COLOR_SWATCH={'Noir':'#111','Blanc / écru':'#f2ede2','Brun / beige':'#8a6a4c','Bleu':'#3a5a8c','Rouge':'#c8283d','Orange':'#d97a34','Rose / violet':'#b06aa0','Vert / olive':'#6f7d4a','Jaune':'#d9b23c','Gris / métallisé':'#9a9a9a','Motifs / multicolore':'linear-gradient(135deg,#c8283d,#3a5a8c,#d9b23c)','Autre':'#6f6a63'};
-const NAV=[['home','Accueil'],['catalog','Catalogue'],['wardrobe','Vestiaire'],['collections','Collections'],['purchases','Achats'],['cart','Panier'],['trash','Corbeille']];
+const NAV=[['home','Accueil'],['catalog','Catalogue'],['wardrobe','Vestiaire'],['collections','Collections'],['purchases','Achats'],['cart','Panier'],['shopping','Personal Shopper'],['trash','Corbeille']];
 let route={page:'home',filter:{}};
 let collectionTarget=null;
 let editTarget=null;
