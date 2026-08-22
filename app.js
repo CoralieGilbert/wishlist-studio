@@ -427,12 +427,14 @@ async function loadCartAdviceHistory(){
 function renderCartAdviceModal(){
  const items=cartAdviceSelection.map(byId).filter(Boolean);
  document.getElementById('cartAdviceModalBody').innerHTML=`
-  <div class="full" style="margin-bottom:14px"><span class="eyebrow">Pièces sélectionnées (${items.length})</span><div class="listview" style="margin-top:8px">${items.map(x=>`<div class="listitem"><img src="${mainImage(x)}" alt=""><div><h3>${esc(x.name)}</h3><p>${esc(x.brand)} · ${esc(x.price||'')}</p></div></div>`).join('')}</div></div>
-  <label class="full"><span>Précisions (facultatif)</span><textarea id="caQuery" placeholder="Ex. je veux surtout savoir si ça fait doublon avec mon vestiaire…" oninput="onCartAdviceInputChange()"></textarea></label>
-  <div id="cartAdviceEstimateBox" class="full" style="margin:8px 0 10px;font-size:12px;color:var(--muted)"></div>
-  <div class="full"><button class="btn primary" id="cartAdviceBtn" onclick="runCartAdviceGenerate()">${ICON_SPARKLE} Demander un avis</button></div>
-  <div class="full" id="cartAdviceResult" style="margin-top:18px"></div>
-  <div class="full" id="cartAdviceHistoryBox"></div>
+  <div style="margin-bottom:14px"><span class="eyebrow">Pièces sélectionnées (${items.length})</span><div class="listview" style="margin-top:8px">${items.map(x=>`<div class="listitem"><img src="${mainImage(x)}" alt=""><div><h3>${esc(x.name)}</h3><p>${esc(x.brand)} · ${esc(x.price||'')}</p></div></div>`).join('')}</div></div>
+  <div class="form">
+   <label class="full"><span>Précisions (facultatif)</span><textarea id="caQuery" placeholder="Ex. je veux surtout savoir si ça fait doublon avec mon vestiaire…" oninput="onCartAdviceInputChange()"></textarea></label>
+   <div id="cartAdviceEstimateBox" class="full" style="margin:-2px 0 2px;font-size:12px;color:var(--muted)"></div>
+   <div class="full"><button class="btn primary" id="cartAdviceBtn" onclick="runCartAdviceGenerate()">${ICON_SPARKLE} Demander un avis</button></div>
+  </div>
+  <div id="cartAdviceResult" style="margin-top:18px"></div>
+  <div id="cartAdviceHistoryBox"></div>
  `;
  onCartAdviceInputChange();
 }
