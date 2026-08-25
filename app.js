@@ -62,9 +62,31 @@ let outfitDraftPhotos=[];
 let state=null;
 let lastSynced=null;
 
-async function persist(){
-  try{ lastSynced=await DB.persistState(state,lastSynced); }
-  catch(e){ console.error('persist error:',e); toast(`Erreur de synchronisation${e?.message?' : '+e.message:''} — réessaie dans un instant.`); }
+// Backup local + file d'attente : persist() écrit d'abord un instantané
+// synchrone dans localStorage (avant tout appel réseau), pour que même une
+// synchro interrompue (onglet fermé/mis en arrière-plan pendant l'upload
+// des photos, connexion coupée) laisse une trace récupérable au prochain
+// chargement (cf. tentative de récupération dans Auth.onReady). Les appels
+// sont aussi mis en file (persistChain) pour ne jamais laisser deux
+// synchros courir en parallèle sur le même lastSynced — sinon la seconde
+// pouvait écraser l'accusé de réception de la première.
+let persistChain=Promise.resolve();
+function persist(){
+  const run=async()=>{
+    try{ localStorage.setItem('wsPendingState',JSON.stringify({state,ts:Date.now()})); }catch(e){}
+    try{
+      lastSynced=await DB.persistState(state,lastSynced);
+      try{ localStorage.removeItem('wsPendingState'); }catch(e){}
+      return true;
+    }catch(e){
+      console.error('persist error:',e);
+      toast(`Erreur de synchronisation${e?.message?' : '+e.message:''} — réessaie dans un instant.`,4500);
+      return false;
+    }
+  };
+  const result=persistChain.then(run,run);
+  persistChain=result.then(()=>{},()=>{});
+  return result;
 }
 function mergedItems(){return [...state.articles,...state.wardrobeItems]}
 function liveItems(){return mergedItems().filter(x=>!state.trash.includes(x.uid))}
@@ -103,7 +125,7 @@ function entityById(id){return byId(id)||outfitById(id)}
 
 function esc(s=''){return String(s??'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]))}
 function safeUrl(u=''){try{const x=new URL(u);return ['http:','https:'].includes(x.protocol)?u:'#'}catch(e){return '#'}}
-function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(window.__tt);window.__tt=setTimeout(()=>t.classList.remove('show'),1800)}
+function toast(msg,ms=1800){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(window.__tt);window.__tt=setTimeout(()=>t.classList.remove('show'),ms)}
 function navRender(){
   let activeGroup=null;
   document.getElementById('nav').innerHTML=NAV.map(e=>{
@@ -1132,6 +1154,24 @@ Auth.onReady(async (session)=>{
   if(!state){
     state=await DB.loadState();
     lastSynced=DB.snapshot(state);
+    // Récupération d'une synchro interrompue lors d'une session précédente
+    // (voir persist()) : si un instantané local ne correspond pas à ce qui
+    // est réellement sur le serveur, on rejoue la synchro par diff dessus.
+    try{
+      const raw=localStorage.getItem('wsPendingState');
+      if(raw){
+        const pending=JSON.parse(raw)?.state;
+        const pendingSnap=pending?DB.snapshot(pending):null;
+        if(pendingSnap&&JSON.stringify(pendingSnap)!==JSON.stringify(lastSynced)){
+          state=pending;
+          const ok=await persist();
+          if(ok) toast('Des articles non synchronisés ont été récupérés et sauvegardés.',5000);
+          else toast('Des articles en attente de synchro n\'ont pas pu être sauvegardés — vérifie ta connexion et rouvre l\'appli.',5000);
+        }else{
+          localStorage.removeItem('wsPendingState');
+        }
+      }
+    }catch(e){ console.warn('récupération backup local échouée:',e); }
     render();
   }
 });
