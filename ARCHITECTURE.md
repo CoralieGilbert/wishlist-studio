@@ -232,12 +232,15 @@ Pas encore fait, à checker si besoin :
 
 - Pas de build : toute modif de `app.js`/`styles.css`/`index.html` est
   visible directement, Vercel redéploie sur push vers `main`.
-- **Cache-busting** : `index.html` charge `db.js?v=N`/`app.js?v=N`.
-  Incrémenter `N` à CHAQUE modif de ces deux fichiers avant de pousser,
-  sinon des navigateurs (surtout mobile, onglet resté ouvert) peuvent
-  continuer à servir l'ancien JS après un déploiement — vécu plusieurs
-  fois pendant les sessions de dev (hard-reload/`cache:'no-store'`
-  nécessaire pour voir le nouveau code sans ce paramètre).
+- **Cache-busting** : `index.html` charge `db.js?v=N`/`app.js?v=N`/
+  `styles.css?v=N`. Incrémenter `N` à CHAQUE modif d'un de ces trois
+  fichiers avant de pousser, sinon des navigateurs (surtout mobile, onglet
+  resté ouvert) peuvent continuer à servir l'ancienne version après un
+  déploiement — vécu plusieurs fois pendant les sessions de dev
+  (hard-reload/`cache:'no-store'` nécessaire pour voir le nouveau code sans
+  ce paramètre). `styles.css` n'avait PAS ce paramètre jusqu'au 2026-08-26 —
+  un correctif CSS avait été poussé mais restait invisible sur mobile à
+  cause du cache tant que le lien n'était pas versionné.
 - `app.js` et `styles.css` ont des lignes très longues (CSS minifié à la
   main, JS avec du template-string HTML inline) — normal, pas un bug de
   formatage.
