@@ -64,6 +64,8 @@
 
 <div class="modalback" id="purchaseModal"><div class="modal wide purchase-modal"><div class="modalhead"><h2 id="purchaseModalTitle">Marquer comme acheté</h2><button class="close" onclick="closeModal('purchaseModal')">×</button></div><div class="modalbody" id="purchaseModalBody"></div><div class="modalfoot"><span class="purchase-modal-meta" id="purchaseModalMeta"></span><button class="btn" onclick="closeModal('purchaseModal')">Annuler</button><button class="btn primary" onclick="savePurchaseModal()">Enregistrer l’achat</button></div></div></div>
 
+<div class="modalback" id="batchResultsModal"><div class="modal wide"><div class="modalhead"><h2>Articles ajoutés</h2><button class="close" onclick="closeModal('batchResultsModal')">×</button></div><div class="modalbody" id="batchResultsBody"></div><div class="modalfoot"><button class="btn primary" onclick="closeModal('batchResultsModal')">Terminé</button></div></div></div>
+
 <div class="modalback" id="itemModal"><div class="modal"><div class="modalhead"><h2 id="itemModalTitle">Ajouter un article</h2><div style="display:flex;gap:8px"><button class="close" id="itemModalTrashBtn" style="display:none;align-items:center;justify-content:center" title="Envoyer dans la corbeille" onclick="quickTrashFromEditor()"></button><button class="close" onclick="closeModal('itemModal')">×</button></div></div><div class="modalbody" id="itemFormWrap"></div><div class="modalfoot"><button class="btn" onclick="closeModal('itemModal')">Annuler</button><button class="btn primary" onclick="saveItemForm()">Enregistrer</button></div></div></div>
 <div class="modalback" id="collectionModal"><div class="modal"><div class="modalhead"><h2>Collections</h2><button class="close" onclick="closeModal('collectionModal')">×</button></div><div class="modalbody" id="collectionModalBody"></div><div class="modalfoot"><button class="btn" onclick="newCollectionFromModal()">+ Nouvelle collection</button><button class="btn primary" onclick="saveCollectionMembership()">Terminé</button></div></div></div>
 <div class="modalback" id="newCollectionModal"><div class="modal"><div class="modalhead"><h2>Nouvelle collection</h2><button class="close" onclick="closeModal('newCollectionModal')">×</button></div><div class="modalbody"><div class="form"><label class="full"><span>Nom</span><input id="newCollName" placeholder="Ex. Tenues Japon, bureau gothique…"></label><label><span>Symbole</span><input id="newCollEmoji" value="✦" maxlength="4"></label><label><span>Couleur / vibe</span><input id="newCollDesc" placeholder="Quelques mots"></label></div></div><div class="modalfoot"><button class="btn" onclick="closeModal('newCollectionModal')">Annuler</button><button class="btn primary" onclick="createCollection()">Créer</button></div></div></div>
@@ -94,6 +96,6 @@
      mobile) peuvent continuer à servir l'ancien fichier depuis leur cache
      local malgré le déploiement. -->
 <script type="module" src="db.js?v=2"></script>
-<script src="app.js?v=7" defer></script>
+<script src="app.js?v=8" defer></script>
 </body>
 </html>

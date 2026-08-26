@@ -736,6 +736,12 @@ function compressImageFile(file,max=1200,quality=.78){return new Promise((resolv
 function renderQuickImages(){const p=document.getElementById('quickPreview'),c=document.getElementById('quickCount'),b=document.getElementById('quickCreateBtn'),a=document.getElementById('quickAnalyzeBtn');if(p)p.innerHTML=quickImages.map((x,i)=>`<div class="quick-thumb"><img src="${x.data}" alt=""><button title="Retirer" onclick="event.stopPropagation();removeQuickImage(${i})">×</button></div>`).join('');if(c)c.textContent=quickImages.length?`${quickImages.length} image${quickImages.length>1?'s':''} prête${quickImages.length>1?'s':''}`:'Aucune image sélectionnée';if(b){b.disabled=!quickImages.length;b.textContent=quickImages.length?`Créer ${quickImages.length} brouillon${quickImages.length>1?'s':''}`:'Créer les brouillons'}if(a)a.disabled=!quickImages.length}
 async function quickAnalyzeAI(){
   if(!quickImages.length){toast('Ajoute au moins une image d\'abord');return}
+  if(quickImages.length===1){await quickAnalyzeSingle();return}
+  await quickAnalyzeBatch();
+}
+// Une seule image : comportement historique, ouvre directement la fiche
+// préremplie pour édition immédiate (pas besoin d'une liste de résultats).
+async function quickAnalyzeSingle(){
   const btn=document.getElementById('quickAnalyzeBtn');const original=btn?.innerHTML;
   if(btn){btn.disabled=true;btn.innerHTML='<span class="spinner"></span>Analyse en cours…'}
   try{
@@ -763,6 +769,63 @@ async function quickAnalyzeAI(){
   }finally{
     if(btn){btn.disabled=!quickImages.length;btn.innerHTML=original}
   }
+}
+// Plusieurs images : chaque image est analysée séparément par l'IA (appels
+// en parallèle, un par image — pas un gros appel groupé dont le budget de
+// tokens grossirait avec le nombre d'articles, ni de risque que l'IA
+// mélange les infos de deux articles). Chaque image devient un article
+// "À compléter" préremplie par l'IA quand l'analyse réussit, ou un
+// brouillon vide (comme "Créer les brouillons") si elle échoue pour cette
+// image précise — jamais de perte, juste moins d'infos préremplies.
+async function quickAnalyzeBatch(){
+  const imgs=[...quickImages];
+  const total=imgs.length;
+  const btn=document.getElementById('quickAnalyzeBtn');const createBtn=document.getElementById('quickCreateBtn');
+  const original=btn?.innerHTML;
+  let done=0;
+  const setProgress=()=>{if(btn)btn.innerHTML=`<span class="spinner"></span>Analyse ${done}/${total}…`};
+  if(btn){btn.disabled=true;setProgress()}
+  if(createBtn)createBtn.disabled=true;
+  const settled=await Promise.all(imgs.map(im=>DB.analyzeImageAI(im.data)
+    .then(fiche=>{done++;setProgress();return {ok:true,fiche}})
+    .catch(e=>{done++;setProgress();console.warn('analyse IA échouée pour une image:',e);return {ok:false,error:e}})));
+  const now=Date.now(),date=new Date().toISOString().slice(0,10);
+  const drafts=imgs.map((im,i)=>{
+    const uid=`c-${now.toString(36)}-${i}`;
+    const r=settled[i];const fiche=r.ok?r.fiche:null;
+    return {uid,id:uid,
+      name:fiche?.name||`À compléter ${i+1}`,
+      brand:fiche?.brand||'',store:fiche?.store||'',
+      supercategory:fiche?.category||'Autre',
+      subcategory:fiche?.subcategory||'À classer',
+      category:fiche?.subcategory||'À classer',
+      color:fiche?.color||'',color_family:fiche?.color_family||'Autre',
+      price:fiche?.price_num!=null?`${fiche.price_num}${fiche.currency?' '+fiche.currency:''}`:'',
+      price_num:fiche?.price_num??null,
+      original:fiche?.original_price_num!=null?`${fiche.original_price_num}${fiche.currency?' '+fiche.currency:''}`:'',
+      discount:'',currency:fiche?.currency||'CAD',sale:fiche?.sale?'Oui':'Non',
+      purchase_type:'Plaisir',status:'À compléter',priority:'Moyenne',size:'',
+      date_added:date,desire_score:3,utility_score:3,
+      purchased:false,paid_price_num:null,purchase_date:null,
+      tags:fiche?.tags?.length?fiche.tags:['à compléter'],
+      url:fiche?.url||'',image_url:im.data,
+      note:fiche?'Fiche préremplie par l\'IA — vérifie avant de finaliser.':'Analyse IA indisponible pour cette image — à compléter manuellement.',
+      _aiOk:!!fiche};
+  });
+  state.articles.unshift(...drafts);
+  persist();
+  clearQuickImages();closeModal('quickAddModal');
+  if(btn){btn.disabled=!quickImages.length;btn.innerHTML=original}
+  if(createBtn)createBtn.disabled=!quickImages.length;
+  const failedCount=drafts.filter(d=>!d._aiOk).length;
+  toast(failedCount?`${drafts.length} articles créés (${failedCount} sans analyse IA)`:`${drafts.length} articles analysés par l'IA`,3500);
+  openBatchResults(drafts.map(d=>d.uid));
+}
+function openBatchResults(uids){
+  const items=uids.map(byId).filter(Boolean);
+  if(!items.length)return;
+  document.getElementById('batchResultsBody').innerHTML=`<p style="color:var(--muted);font-size:12px;margin:0 0 12px">Clique sur un article pour voir/compléter sa fiche.</p><div class="listview">${items.map(x=>`<div class="listitem" style="cursor:pointer" onclick="closeModal('batchResultsModal');openItemEditor('${x.uid}')"><img src="${mainImage(x)}" alt=""><div><h3>${esc(x.name)}</h3><p>${esc(x.brand||'Sans marque')} · ${esc(x.price||'Prix à renseigner')}</p><div class="purchase-list-meta">${x.url?'🔗 Lien trouvé':x._aiOk?'Pas de lien trouvé':'⚠ Analyse IA indisponible pour cette image'}</div></div></div>`).join('')}</div>`;
+  openModal('batchResultsModal');
 }
 function removeQuickImage(i){quickImages.splice(i,1);renderQuickImages()}
 function clearQuickImages(){quickImages=[];const i=document.getElementById('quickFileInput');if(i)i.value='';renderQuickImages()}
