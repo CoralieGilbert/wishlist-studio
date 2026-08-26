@@ -32,7 +32,7 @@ create table if not exists articles (
   multi boolean default false,
   tags text[] default '{}',
   purchase_type text,         -- Besoin / Upgrade / Plaisir / Collection / Cadeau / À surveiller
-  status text,                -- À compléter / À considérer / Favori / Attendre soldes / À essayer / Acheté / Écarté
+  status text,                -- À compléter / À considérer / Favori / Attendre soldes / À essayer / Plus disponible / Acheté / Écarté
   priority text,
   desire_score integer,
   utility_score integer,

@@ -45,13 +45,19 @@ export async function buildWishlistDetail(supabaseAdmin, userId, limit) {
 
 // Candidats "achetables" pour l'assistant shopping : uniquement des pièces
 // réelles de la wishlist (jamais inventées), avec leur prix, pour que l'IA
-// puisse composer un panier qui respecte un budget.
+// puisse composer un panier qui respecte un budget. Exclut aussi les
+// pièces marquées "Plus disponible" (retirées du site du vendeur) — pas
+// la peine de les suggérer si on ne peut plus les acheter.
 export async function buildShoppingCandidates(supabaseAdmin, userId, limit) {
   const n = Math.max(0, Math.min(150, Number(limit) || 0));
   if (!n) return [];
+  // .or() plutôt que .neq() : un statut NULL (vieux articles sans statut
+  // renseigné) doit rester inclus, or `status<>'Plus disponible'` exclurait
+  // silencieusement les statuts NULL en SQL (NULL <> x n'est jamais vrai).
   const { data } = await supabaseAdmin.from('articles')
     .select('uid,name,brand,category,subcategory,color,color_family,price_num,currency,tags')
     .eq('user_id', userId).eq('is_trashed', false).eq('purchased', false)
+    .or('status.is.null,status.neq.Plus disponible')
     .order('date_added', { ascending: false }).limit(n);
   return data || [];
 }
