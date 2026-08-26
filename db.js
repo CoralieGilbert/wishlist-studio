@@ -18,7 +18,18 @@ const WARDROBE_COLUMNS = ['uid','name','brand','store','supercategory','category
 const OUTFIT_COLUMNS = ['uid','name','note','tags','date_added'];
 const COLLECTION_COLUMNS = ['id','name','emoji','description'];
 
-function pick(obj, keys) { const o = {}; keys.forEach(k => { if (obj[k] !== undefined) o[k] = obj[k]; }); return o; }
+// Colonnes Postgres de type "date" : une chaîne vide y est invalide
+// ('invalid input syntax for type date'), il faut null. Filet de sécurité
+// pour ne jamais refaire planter toute la synchro sur ce genre d'oubli.
+const DATE_COLUMNS = ['date_added', 'purchase_date'];
+function pick(obj, keys) {
+  const o = {};
+  keys.forEach(k => {
+    if (obj[k] === undefined) return;
+    o[k] = (DATE_COLUMNS.includes(k) && obj[k] === '') ? null : obj[k];
+  });
+  return o;
+}
 function clone(x) { return JSON.parse(JSON.stringify(x)); }
 
 // === AUTHENTIFICATION ======================================================
