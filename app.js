@@ -824,7 +824,8 @@ async function quickAnalyzeBatch(){
 function openBatchResults(uids){
   const items=uids.map(byId).filter(Boolean);
   if(!items.length)return;
-  document.getElementById('batchResultsBody').innerHTML=`<p style="color:var(--muted);font-size:12px;margin:0 0 12px">Clique sur un article pour voir/compléter sa fiche.</p><div class="listview">${items.map(x=>`<div class="listitem" style="cursor:pointer" onclick="closeModal('batchResultsModal');openItemEditor('${x.uid}')"><img src="${mainImage(x)}" alt=""><div><h3>${esc(x.name)}</h3><p>${esc(x.brand||'Sans marque')} · ${esc(x.price||'Prix à renseigner')}</p><div class="purchase-list-meta">${x.url?'🔗 Lien trouvé':x._aiOk?'Pas de lien trouvé':'⚠ Analyse IA indisponible pour cette image'}</div></div></div>`).join('')}</div>`;
+  const metaLine=x=>{const brand=(x.brand||'').trim();const store=(x.store||'').trim();const bits=[brand||'Sans marque'];if(store&&store.toLowerCase()!==brand.toLowerCase())bits.push(store);bits.push(x.price||'Prix à renseigner');return bits.map(esc).join(' · ')};
+  document.getElementById('batchResultsBody').innerHTML=`<p style="color:var(--muted);font-size:12px;margin:0 0 12px">Clique sur un article pour voir/compléter sa fiche.</p><div class="listview">${items.map(x=>`<div class="listitem" style="cursor:pointer" onclick="closeModal('batchResultsModal');openItemEditor('${x.uid}')"><img src="${mainImage(x)}" alt=""><div><h3>${esc(x.name)}</h3><p>${metaLine(x)}</p><div class="purchase-list-meta">${x.url?'🔗 Lien trouvé':x._aiOk?'Pas de lien trouvé':'⚠ Analyse IA indisponible pour cette image'}</div></div></div>`).join('')}</div>`;
   openModal('batchResultsModal');
 }
 function removeQuickImage(i){quickImages.splice(i,1);renderQuickImages()}
