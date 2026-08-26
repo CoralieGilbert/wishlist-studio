@@ -786,9 +786,14 @@ async function quickAnalyzeBatch(){
   const setProgress=()=>{if(btn)btn.innerHTML=`<span class="spinner"></span>Analyse ${done}/${total}…`};
   if(btn){btn.disabled=true;setProgress()}
   if(createBtn)createBtn.disabled=true;
-  const settled=await Promise.all(imgs.map(im=>DB.analyzeImageAI(im.data)
+  // Concurrence limitée à 2 : la clé OpenAI perso de chaque utilisatrice a
+  // ses propres limites de requêtes/minute (souvent basses sur les comptes
+  // peu utilisés) — tout lancer en parallèle d'un coup risquait de faire
+  // échouer TOUTES les analyses par limite de débit (429), silencieusement
+  // repliées en brouillons vides.
+  const settled=await mapWithConcurrency(imgs,2,im=>DB.analyzeImageAI(im.data)
     .then(fiche=>{done++;setProgress();return {ok:true,fiche}})
-    .catch(e=>{done++;setProgress();console.warn('analyse IA échouée pour une image:',e);return {ok:false,error:e}})));
+    .catch(e=>{done++;setProgress();console.warn('analyse IA échouée pour une image:',e);return {ok:false,error:e,message:e?.message||String(e)}}));
   const now=Date.now(),date=new Date().toISOString().slice(0,10);
   const drafts=imgs.map((im,i)=>{
     const uid=`c-${now.toString(36)}-${i}`;
@@ -818,8 +823,21 @@ async function quickAnalyzeBatch(){
   if(btn){btn.disabled=!quickImages.length;btn.innerHTML=original}
   if(createBtn)createBtn.disabled=!quickImages.length;
   const failedCount=drafts.filter(d=>!d._aiOk).length;
-  toast(failedCount?`${drafts.length} articles créés (${failedCount} sans analyse IA)`:`${drafts.length} articles analysés par l'IA`,3500);
+  const firstError=settled.find(r=>!r.ok)?.message;
+  let msg;
+  if(failedCount===drafts.length) msg=`Analyse IA impossible${firstError?' : '+firstError:''} — articles créés vides, à compléter à la main.`;
+  else if(failedCount) msg=`${drafts.length} articles créés (${failedCount} sans analyse IA${firstError?' : '+firstError:''})`;
+  else msg=`${drafts.length} articles analysés par l'IA`;
+  toast(msg,failedCount?5500:3500);
   openBatchResults(drafts.map(d=>d.uid));
+}
+// Petit pool de concurrence : traite `items` avec au plus `limit` appels de
+// `fn` en vol simultanément, au lieu de tout lancer d'un coup.
+function mapWithConcurrency(items,limit,fn){
+  const results=new Array(items.length);
+  let next=0;
+  async function worker(){while(next<items.length){const i=next++;results[i]=await fn(items[i],i)}}
+  return Promise.all(Array.from({length:Math.min(limit,items.length)},worker)).then(()=>results);
 }
 function openBatchResults(uids){
   const items=uids.map(byId).filter(Boolean);
